@@ -1,7 +1,6 @@
 import tkinter as tk
 import customtkinter as ctk
 from button_commands import Button_Commands
-import button_commands
 from utils import Utilities, util
 from PIL import Image, ImageTk
 

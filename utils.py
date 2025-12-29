@@ -113,9 +113,6 @@ class Utilities:
         def pack(self, **kwargs):
             self.button.pack(kwargs)
 
-        def pack(self, **kwargs):
-            self.button.pack(kwargs)
-
         def grid(self, **kwargs):
             self.button.grid(kwargs)
 

@@ -18,9 +18,8 @@ def create_window(master):
     utils.initialize_windows(window)
 
     sections = [
-        ("title_frame", "windows/total_players/total_players.png", 0, 0.3),
-        ("body_frame", "images/background_image.png", 0.3, 0.6),
-        ("footer_frame", "images/background_image.png", 0.9, 0.1)
+        ("title_frame", "windows/roles/roles.png", 0, 0.3),
+        ("body_frame", "images/background_image.png", 0.3, 0.7),
     ]
 
     for name, path, rel_y, rel_height in sections:
@@ -34,27 +33,25 @@ def create_window(master):
         label.place(relx=0, rely=0, relheight=1, relwidth=1)
         label.bind("<Configure>", lambda event, lbl=label, last={"width": 0, "height": 0}, pth=path: utils.image_config(event, lbl, last, pth))
 
-    # # Path to the title image
-    # title_path = "windows/total_players/total_players.png"
-    # last = {"width": 0, "height": 0}
+    player_num = util.db.total_players
+    mafia_num = util.db.total_mafias
 
-    # # Frame for the title
-    # title_frame = tk.Frame(window)
-    # title_frame.place(relx=0, rely=0, relwidth=1, relheight=0.3)
+    matrix = [[0]*3 for _ in range(4)]
+    for i in range(player_num):
+        index_1 = i//3
+        index_2 = i%3
+        matrix[index_1][index_2] = 1
 
-    # # Label for the title image
-    # title_label = tk.Label(title_frame)
-    # title_label.place(relx=0, rely=0, relheight=1, relwidth=1)
-    # title_label.bind("<Configure>", lambda event: utils.image_config(event, title_label, last, title_path))
+    rows = (player_num+2)//3
+    columns = 3
 
-    # bg_path = "images/background_image.png"
-    # last_body = {"width": 0, "height": 0}
+    for row in range(rows):
+        body_frame.rowconfigure(row, weight=1)
+    for column in range(columns):
+        body_frame.columnconfigure(column, weight=1)
 
-    # # Frame for the title
-    # body_frame = tk.Frame(window)
-    # body_frame.place(relx=0, rely=0.3, relwidth=1, relheight=0.6)
-
-    # # Label for the title image
-    # body_label = tk.Label(body_frame)
-    # body_label.place(relx=0, rely=0, relheight=1, relwidth=1)
-    # body_label.bind("<Configure>", lambda event: utils.image_config(event, body_label, last_body, bg_path))
+    for i in range(rows):
+        for j in range(columns):
+            if matrix[i][j] == 1:
+                globals()[f"c_{i}{j}"] = frame = ctk.CTkFrame(body_frame, bg_color= '#171717', fg_color='black', border_width=7, border_color="grey", corner_radius=15)
+                frame.grid(row=i, column=j, sticky="nsew", padx= 10, pady= 10)

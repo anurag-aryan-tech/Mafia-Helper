@@ -127,10 +127,10 @@ def create_window(master):
     def enable_mafia_input(event=None):
         # Get the player input value and convert it to an integer
         player_num = int(total_player.get())
-        # Change the total number of players in the database
-        util.db.change_player_num(player_num)
         # Get the mafia input value and convert it to an integer
         mafia_num = int(total_mafia.get())
+        # Change the total number of players in the database
+        util.db.change_player_num(player_num)
         # Calculate the maximum number of mafias based on the player number
         if player_num % 2 == 0:
             mafia_limit = (player_num // 2)
@@ -148,8 +148,10 @@ def create_window(master):
         # If the player number is 4 (minimum number of players), disable the mafia input combobox
         if player_num == 4:
             mafia_input.configure(state= 'disabled')
+            total_mafia.set('1')
         else:
             mafia_input.configure(state= 'normal')
+    enable_mafia_input()
 
     # Configure the player input combobox to call the enable_mafia_input function when its value is changed
     player_input.configure(command= lambda event=None: enable_mafia_input(event))
