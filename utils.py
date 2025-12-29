@@ -67,9 +67,6 @@ class Utilities:
         # Bind the ESC key to toggle the zoom state of the window
         window.bind("<Escape>", lambda event: self.zoom_control(window, event))
 
-        # Create frames for the title and main content
-
-        # Function to resize an image
     def image_config(self, event, label_name, last_size, img_path):
         # Only resize if dimensions actually changed
         if event.width != last_size['width'] or event.height != last_size['height']:
