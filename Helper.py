@@ -1,7 +1,7 @@
 import tkinter as tk
 import customtkinter as ctk
 from button_commands import Button_Commands
-from utils import Utilities, util
+from utils import utils
 from PIL import Image, ImageTk
 
 # ========================================MAIN PAGE========================================
@@ -10,7 +10,6 @@ main.title("MAIN PAGE")
 main.config(bg="#0E0D0B")
 main.minsize(600, 450)
 
-utils = Utilities()
 button_commands = Button_Commands()
 
 # Placing the window at the centre initially
@@ -93,7 +92,7 @@ button_attr = [("start", (82, 65), lambda event=None: button_commands.start_butt
             ("prompts", (97, 85), None),
             ("night", (97, 85), None),
             ("day", (97, 85), None),
-            ("reset", (85, 75), lambda event=None: print(util.db.total_players, util.db.total_mafias))]
+            ("reset", (85, 75), lambda event=None: button_commands.reset_button_command())]
 
 main_buttons = {}
 

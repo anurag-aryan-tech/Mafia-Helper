@@ -9,6 +9,7 @@ class Database:
         self.sheriff = None
         self.doctor = None
         self.prompts = {}
+        self.first_disable = False
 
     def change_player_num(self, player_num: int) -> None:
         self.total_players, self.players_left = player_num, player_num
@@ -81,3 +82,24 @@ class Database:
                 self.sheriff = x
             elif y.lower() == 'doctor':
                 self.doctor = x
+    def change_player_name(self, name: str, position: int):
+        if position <= 0 or position > self.total_players:
+            raise ValueError("Invalid Position!")
+        _, role = self.players_list[position-1]
+        self.players_list[position-1] = (name, role)
+        self.change_msd(self.players_list)
+        
+    def change_first_disable(self):
+        self.first_disable = False if self.first_disable else True
+
+    def reset_values(self):
+        self.total_players = 4
+        self.total_mafias = 1
+        self.players_left = 4
+        self.mafias_left = 1
+        self.players_list = [('', '')] * self.total_players
+        self.mafias_list = []
+        self.sheriff = None
+        self.doctor = None
+        self.prompts = {}
+        self.first_disable = False

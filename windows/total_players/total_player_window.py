@@ -1,9 +1,7 @@
 import tkinter as tk
 import customtkinter as ctk
-from utils import Utilities, util
+from utils import utils
 from PIL import Image, ImageTk
-
-utils = Utilities()
 
 
 def create_window(master):
@@ -91,8 +89,8 @@ def create_window(master):
     player_range = [str(n) for n in range(4, 12)]
 
     # Create StringVars for the total player and total mafia values
-    total_player = tk.StringVar(value=f"{util.db.total_players}")
-    total_mafia = tk.StringVar(value=f"{util.db.total_mafias}")
+    total_player = tk.StringVar(value=f"{utils.db.total_players}")
+    total_mafia = tk.StringVar(value=f"{utils.db.total_mafias}")
 
     # Define colors and dimensions for combo boxes
     fg = "#062929"
@@ -130,7 +128,7 @@ def create_window(master):
         # Get the mafia input value and convert it to an integer
         mafia_num = int(total_mafia.get())
         # Change the total number of players in the database
-        util.db.change_player_num(player_num)
+        utils.db.change_player_num(player_num)
         # Calculate the maximum number of mafias based on the player number
         if player_num % 2 == 0:
             mafia_limit = (player_num // 2)
@@ -141,7 +139,7 @@ def create_window(master):
         # set it to the mafia limit - 1 and update the database
         if mafia_num >= mafia_limit:
                 total_mafia.set(str(mafia_limit-1))
-                util.db.change_mafia_num(mafia_limit-1)
+                utils.db.change_mafia_num(mafia_limit-1)
 
         # Update the values of the mafia input combobox based on the mafia limit
         mafia_input.configure(values= [str(n) for n in range(1, mafia_limit)])
@@ -156,7 +154,7 @@ def create_window(master):
     # Configure the player input combobox to call the enable_mafia_input function when its value is changed
     player_input.configure(command= lambda event=None: enable_mafia_input(event))
     # Configure the mafia input combobox to call the change_mafia_num function of the database when its value is changed
-    mafia_input.configure(command= lambda event=None: util.db.change_mafia_num(int(total_mafia.get())))
+    mafia_input.configure(command= lambda event=None: utils.db.change_mafia_num(int(total_mafia.get())))
 
     def close_window():
         window.destroy()

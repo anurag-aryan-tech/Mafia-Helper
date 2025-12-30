@@ -111,13 +111,13 @@ class Utilities:
             self.master.after(400, self.on_release)
 
         def pack(self, **kwargs):
-            self.button.pack(kwargs)
+            self.button.pack(**kwargs)
 
         def grid(self, **kwargs):
-            self.button.grid(kwargs)
+            self.button.grid(**kwargs)
 
         def place(self, **kwargs):
-            self.button.place(kwargs)
+            self.button.place(**kwargs)
 
         def winfo_reqwidth(self):
             self.button.update_idletasks()
@@ -127,4 +127,4 @@ class Utilities:
             self.button.update_idletasks()
             return self.button.winfo_reqheight()
 
-util = Utilities()
+utils = Utilities()
