@@ -3,7 +3,7 @@ from tkinter import messagebox
 from utils import utils
 from windows.total_players import total_player_window
 from windows.roles import roles_window
-
+from windows.prompts import prompts_window
 class Button_Commands:
     def __init__(self):
         pass
@@ -24,7 +24,10 @@ class Button_Commands:
         if answer:
             utils.db.reset_values()
             messagebox.showinfo("Reset", "All values have been reset successfully!")
-
-
-
+    
+    def prompts_button_command(self, master):
+        if not utils.db.first_disable:
+            messagebox.showwarning("Warning", "Set the Names and Roles of players to proceed!")
+            return
+        prompts_window.create_window(master)
         

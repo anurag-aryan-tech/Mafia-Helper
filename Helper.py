@@ -89,8 +89,8 @@ rel_x, rel_y = 0.2, 0.2
 
 button_attr = [("start", (82, 65), lambda event=None: button_commands.start_button_command(main)),
             ("roles", (86, 48), lambda event=None: button_commands.roles_button_command(main)),
-            ("prompts", (97, 85), None),
-            ("night", (97, 85), None),
+            ("prompts", (97, 85), lambda event=None: button_commands.prompts_button_command(main)),
+            ("night", (97, 85), lambda event=None: utils.db.change_first_disable()),
             ("day", (97, 85), None),
             ("reset", (85, 75), lambda event=None: button_commands.reset_button_command())]
 

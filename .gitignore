@@ -1,5 +1,6 @@
 __pycache__
 windows/__pycache__
-windows/roles/__pycache__
 windows/total_players/__pycache__
+windows/roles/__pycache__
+windows/prompts/__pycache__
 color
