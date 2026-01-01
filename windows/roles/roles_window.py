@@ -132,11 +132,16 @@ def create_window(master):
     pos = 0
     role_boxes = []
     for f_name, frame in frame_names:
+        top_label = ctk.CTkLabel(frame, text=f"Speaker {pos+1}", font=ctk.CTkFont("Garamond", 35, 'bold'), bg_color='transparent', fg_color='transparent', text_color="#8392a3")
+        top_label.place(relx=0.05, rely=0.1, relheight=0.2, relwidth=0.9)
+
         name_var = tk.StringVar(value=utils.db.players_list[pos][0])
         role_var = tk.StringVar(value=utils.db.players_list[pos][1].title())
+
         name_entry = ctk.CTkEntry(frame, corner_radius=7, border_width=5, border_color=bd_color, fg_color=fg_color, bg_color="transparent", text_color="#E6EAF0", font=("Garamond", 18, 'bold'), justify='center', textvariable=name_var)
         name_entry.place(relx=0.3, relwidth=0.6, rely=0.4, relheight=0.2)
-        name_label = ctk.CTkLabel(frame, text="NAME : ", fg_color='transparent', text_color='#E6EAF0', font=ctk.CTkFont("Garamond", 17, 'bold'))
+        
+        name_label = ctk.CTkLabel(frame, text="NAME : ", fg_color='transparent', text_color="#545c66", font=ctk.CTkFont("Garamond", 17, 'bold'))
         name_label.place(relx=0.05, relwidth=0.2, rely=0.4, relheight=0.2)
 
         role_box = ctk.CTkComboBox(frame,
@@ -156,7 +161,7 @@ def create_window(master):
                 values=values)
         role_box.configure(command= lambda event=None, fn=f_name, rb=role_box: role_command(event, fn, rb))
         role_box.place(relx=0.3, relwidth=0.6, rely=0.7, relheight=0.2)
-        role_label = ctk.CTkLabel(frame, text="ROLE : ", fg_color='transparent', text_color='#E6EAF0', font=ctk.CTkFont("Garamond", 17, 'bold'))
+        role_label = ctk.CTkLabel(frame, text="ROLE : ", fg_color='transparent', text_color="#545c66", font=ctk.CTkFont("Garamond", 17, 'bold'))
         role_label.place(relx=0.05, relwidth=0.2, rely=0.7, relheight=0.2)
 
         name_n_role[f_name] = (name_var, role_var)

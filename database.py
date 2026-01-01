@@ -1,3 +1,4 @@
+import windows.prompts.all_prompts as all_prompts 
 class Database:
     def __init__(self):
         self.total_players = 4
@@ -8,8 +9,8 @@ class Database:
         self.mafias_list = []
         self.sheriff = None
         self.doctor = None
-        self.prompts = {}
         self.first_disable = False
+        self.prompts = all_prompts.all_prompts_dict
 
     def change_player_num(self, player_num: int) -> None:
         self.total_players, self.players_left = player_num, player_num
