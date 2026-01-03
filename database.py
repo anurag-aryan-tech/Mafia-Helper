@@ -104,3 +104,40 @@ class Database:
         self.doctor = None
         self.prompts = {}
         self.first_disable = False
+
+    class Night_Day_Helper:
+        def __init__(self):
+            self.night_number = 1
+            self.day_number = 1
+            self.night_phase = 1
+            self.day_phase = 1
+            self.dialogues = {}
+            self.votes = {}
+            
+        def add_dialogue(self, speaker: str, message: str):
+            self.dialogues[speaker] = message
+
+        def get_dialogues(self):
+            text = ""
+            for index, (speaker, message) in enumerate(self.dialogues.items()):
+                text += f"{index + 1}. {speaker.title()}: {message}\n"
+            return text if text else None
+
+        def clear_dialogues(self):
+            self.dialogues = {}
+
+        def add_vote(self, votee: str):
+            self.votes[votee.lower()] = self.votes.get(votee.lower(), 0) + 1
+
+        def most_voted(self):
+            if not self.votes:
+                return None, "No votes recorded"
+            most = max(self.votes, key=lambda x: self.votes[x])
+            vote = self.votes[most]
+            total_votes = sum(self.votes.values())
+            if vote > total_votes / 2:
+                return most, f"Got {vote} out of {total_votes} votes"
+            return None, f"No clear majority"
+
+        def clear_votes(self):
+            self.votes = {}
