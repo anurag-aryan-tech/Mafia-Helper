@@ -5,6 +5,7 @@ from database import Database as db
 class Utilities:
     def __init__(self) -> None:
         self.db = db()
+        self.nd_helper = self.db.Night_Day_Helper()
 
     def zoom_control(self, window, event=None):
         '''

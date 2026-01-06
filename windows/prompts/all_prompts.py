@@ -976,7 +976,7 @@ Threats: [Who suspects us]
             }
         },
         'doctor' : {
-            'prompts' : """## NIGHT - [NIGHT_NUMBER]
+            'prompt' : """## NIGHT - [NIGHT_NUMBER]
 
 - **Role:** Doctor  
 - **Command:** Protect a player  

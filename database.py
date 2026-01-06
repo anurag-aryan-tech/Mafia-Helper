@@ -113,6 +113,8 @@ class Database:
             self.day_phase = 1
             self.dialogues = {}
             self.votes = {}
+            self.doctor_save = None
+            self.day_message = ""
             
         def add_dialogue(self, speaker: str, message: str):
             self.dialogues[speaker] = message
@@ -121,7 +123,7 @@ class Database:
             text = ""
             for index, (speaker, message) in enumerate(self.dialogues.items()):
                 text += f"{index + 1}. {speaker.title()}: {message}\n"
-            return text if text else None
+            return text if text else "None"
 
         def clear_dialogues(self):
             self.dialogues = {}
@@ -141,3 +143,27 @@ class Database:
 
         def clear_votes(self):
             self.votes = {}
+
+        def set_doctor_save(self, player: str):
+            self.doctor_save = player 
+
+        def investigate_result(self, player: str, database):
+            role = None
+            for name, r in database.players_list:
+                if name.lower() == player.lower():
+                    role = r
+                    break
+            if role is None:
+                return "Player not found"
+            if role.lower() == 'mafia':
+                return f"{player.title()} is a Mafia."
+            else:
+                return f"{player.title()} is not a Mafia."
+            
+        def check_died(self, target: str):
+            if self.doctor_save and target.lower() == self.doctor_save.lower():
+                return False
+            return True
+
+        def change_day_message(self, died_player: str):
+            self.day_message = f"## Night {self.night_number} ended.\n {died_player.title()} was eliminated during the night."
