@@ -1,107 +1,218 @@
+from typing import Dict, Tuple, Optional, Callable
 import tkinter as tk
 import customtkinter as ctk
 from button_commands import Button_Commands
 from utils import utils
 from PIL import Image, ImageTk
+from dataclasses import dataclass
 
-# ========================================MAIN PAGE========================================
-main = tk.Tk()
-main.title("MAIN PAGE")
-main.config(bg="#0E0D0B")
-main.minsize(600, 450)
 
-button_commands = Button_Commands()
+@dataclass
+class WindowConfig:
+    """Main window configuration"""
+    TITLE = "MAIN PAGE"
+    BG_COLOR = "#0E0D0B"
+    MIN_WIDTH = 600
+    MIN_HEIGHT = 450
+    WIDTH = 800
+    HEIGHT = 550
 
-# Placing the window at the centre initially
-width = 800
-height = 550
-x, y = utils.calculate_x_y(width, height, main)
-main.geometry(f"{width}x{height}+{x}+{y}")
 
-# Use ESC key to maximize or minimize
-main.bind("<Escape>", lambda event: utils.zoom_control(main, event))
+@dataclass
+class FrameConfig:
+    """Frame styling configuration"""
+    FRAME_COLOR = "#2A332A"
+    CORNER_RADIUS = 45
+    PADDING = 5
 
-# ===================================CREATING FRAMES===================================
 
-# 1. Title Frame: To display the title of the window.
-img_path = "images/title_image.png"
-title_frame = tk.Frame(main, bd= 3, relief="ridge", bg="#0E0D0B", highlightbackground="#0E0D0B")
-title_frame.place(relheight=0.225, relwidth=1, relx=0, rely=0)
+@dataclass
+class ButtonPlacement:
+    """Button placement configuration"""
+    REL_WIDTH = 0.6
+    REL_HEIGHT = 0.6
+    REL_X = 0.2
+    REL_Y = 0.2
 
-# Store previous dimensions
-last_size_1 = {'width': 0, 'height': 0}
 
-def image_config(event, label_name, last_size, img_path):
-    # Only resize if dimensions actually changed
-    if event.width != last_size['width'] or event.height != last_size['height']:
-        last_size['width'] = event.width
-        last_size['height'] = event.height
+class ImageLabel:
+    """Manages a label with a dynamically resizing image"""
+    
+    def __init__(self, parent: tk.Widget, image_path: str):
+        self.parent = parent
+        self.image_path = image_path
+        self.label = tk.Label(parent)
+        self.last_size = {'width': 0, 'height': 0}
+        self.current_image = None  # Store reference to prevent garbage collection
         
-        image = utils.resize_image(img_path, event.width, event.height)
-        label_name.config(image=image)
-        label_name.image = image  # Keep reference
+        self._setup()
+    
+    def _setup(self):
+        """Setup the label and bind resize event"""
+        self.label.place(relwidth=1, relheight=1, relx=0, rely=0)
+        self.label.bind("<Configure>", self._on_resize)
+    
+    def _on_resize(self, event):
+        """Handle resize event"""
+        if event.width != self.last_size['width'] or event.height != self.last_size['height']:
+            self.last_size['width'] = event.width
+            self.last_size['height'] = event.height
+            
+            self.current_image = utils.resize_image(self.image_path, event.width, event.height)
+            self.label.config(image=self.current_image)
 
-title_label = tk.Label(title_frame)
-title_label.place(relwidth=1, relheight=1, relx=0, rely=0)
-title_label.bind("<Configure>", lambda event: image_config(event, title_label, last_size_1, img_path))
 
-
-# 2. Main Frame: Contains all the buttons for other windows
-main_frame = tk.Frame(main, bd=1, bg="#0E0D0B")
-main_frame.place(relheight=0.75, relwidth=1, relx=0, rely=0.225)
-
-
-
-# - Dividing the frame into rows and columns
-total_columns = 5
-total_rows = 5
-for col in range(total_columns):
-    main_frame.columnconfigure(col, weight=1, uniform="column_group")
-for row in range(total_rows):
-    main_frame.rowconfigure(row, weight=1, uniform="row_group")
-
-last_size_2 = {'width': 0, 'height': 0}
-bg_image = ImageTk.PhotoImage(Image.open("images/background_image.png").resize((1360, 600)))
-background_label = tk.Label(main_frame)
-background_label.grid(row=0, column=0, rowspan=5, columnspan=5)
-background_label.config(image=bg_image)
-
-# - Creating frames for holding the buttons
-frame_color = "#2A332A"
-pady = 5
-corner = 45
-
-frame_attr = [("start", 2, 0, None, (pady+3, 0)),
+class MainFrame:
+    """Manages the main content frame with buttons"""
+    
+    def __init__(self, parent, button_commands: Button_Commands):
+        self.parent = parent
+        self.button_commands = button_commands
+        self.frame: tk.Frame
+        self.button_frames: Dict[str, ctk.CTkFrame] = {}
+        self.buttons = {}
+        self.bg_image = None  # Store reference to prevent garbage collection
+        
+        self._create_frame()
+        self._setup_grid()
+        self._create_background()
+        self._create_button_frames()
+        self._create_buttons()
+    
+    def _create_frame(self):
+        """Create the main frame"""
+        self.frame = tk.Frame(self.parent, bd=1, bg=WindowConfig.BG_COLOR)
+        self.frame.place(relheight=0.75, relwidth=1, relx=0, rely=0.225)
+    
+    def _setup_grid(self):
+        """Configure grid layout"""
+        total_columns = 5
+        total_rows = 5
+        
+        for col in range(total_columns):
+            self.frame.columnconfigure(col, weight=1, uniform="column_group")
+        for row in range(total_rows):
+            self.frame.rowconfigure(row, weight=1, uniform="row_group")
+    
+    def _create_background(self):
+        """Create background image"""
+        self.bg_image = ImageTk.PhotoImage(
+            Image.open("images/background_image.png").resize((1360, 600))
+        )
+        background_label = tk.Label(self.frame, image=self.bg_image)
+        background_label.grid(row=0, column=0, rowspan=5, columnspan=5)
+    
+    def _create_button_frames(self):
+        """Create frames for holding buttons"""
+        frame_specs = [
+            ("start", 2, 0, None, (FrameConfig.PADDING + 3, 0)),
             ("roles", 1, 2, None, None),
             ("prompts", 3, 2, None, None),
-            ("night", 0, 4, (10, 0), (0, pady)),
-            ("day", 4, 4, (0, 10), (pady, 0)),
-            ("reset", 2, 4, None, (0, pady))]
+            ("night", 0, 4, (10, 0), (0, FrameConfig.PADDING)),
+            ("day", 4, 4, (0, 10), (FrameConfig.PADDING, 0)),
+            ("reset", 2, 4, None, (0, FrameConfig.PADDING))
+        ]
+        
+        for name, column, row, padx, pady in frame_specs:
+            frame = ctk.CTkFrame(
+                self.frame,
+                fg_color=FrameConfig.FRAME_COLOR,
+                corner_radius=FrameConfig.CORNER_RADIUS
+            )
+            frame.grid(column=column, row=row, sticky="nsew", padx=padx, pady=pady)
+            self.button_frames[f"{name}_button_frame"] = frame
+    
+    def _create_buttons(self):
+        """Create all buttons"""
+        button_specs = [
+            ("start", (82, 65), lambda: self.button_commands.start_button_command(self._get_root())),
+            ("roles", (86, 48), lambda: self.button_commands.roles_button_command(self._get_root())),
+            ("prompts", (97, 85), lambda: self.button_commands.prompts_button_command(self._get_root())),
+            ("night", (97, 85), lambda: self.button_commands.night_button_command(self._get_root())),
+            ("day", (97, 85), lambda: utils.db.change_first_disable()),
+            ("reset", (85, 75), lambda: self.button_commands.reset_button_command())
+        ]
+        
+        for name, size, command in button_specs:
+            btn_name = f"{name}_button"
+            frame = self.button_frames[f"{btn_name}_frame"]
+            
+            image_1 = Image.open(f"{btn_name}/frame_1.png")
+            image_2 = Image.open(f"{btn_name}/frame_2.png")
+            
+            button = utils.Custom_Buttons(frame, image_1, image_2, size, command)
+            button.place(
+                relx=ButtonPlacement.REL_X,
+                rely=ButtonPlacement.REL_Y,
+                relwidth=ButtonPlacement.REL_WIDTH,
+                relheight=ButtonPlacement.REL_HEIGHT
+            )
+            self.buttons[btn_name] = button
+    
+    def _get_root(self):
+        """Get the root Tk window"""
+        widget = self.parent
+        while widget.master is not None:
+            widget = widget.master
+        return widget
 
-for name, column, row, padx, pady in frame_attr:
-    frame = globals()[f"{name}_button_frame"] = ctk.CTkFrame(main_frame, fg_color=frame_color, corner_radius=corner)
-    frame.grid(column=column, row=row, sticky="nsew", padx = padx, pady=pady)
 
-# - Creating the actual buttons
+class MainApplication:
+    """Main application controller"""
+    
+    def __init__(self):
+        self.root = tk.Tk()
+        self.button_commands = Button_Commands()
+        
+        self._setup_window()
+        self._create_title_frame()
+        self._create_main_frame()
+    
+    def _setup_window(self):
+        """Configure the main window"""
+        self.root.title(WindowConfig.TITLE)
+        self.root.config(bg=WindowConfig.BG_COLOR)
+        self.root.minsize(WindowConfig.MIN_WIDTH, WindowConfig.MIN_HEIGHT)
+        
+        # Center window
+        x, y = utils.calculate_x_y(
+            WindowConfig.WIDTH,
+            WindowConfig.HEIGHT,
+            self.root
+        )
+        self.root.geometry(f"{WindowConfig.WIDTH}x{WindowConfig.HEIGHT}+{x}+{y}")
+        
+        # Bind ESC for zoom control
+        self.root.bind("<Escape>", lambda event: utils.zoom_control(self.root, event))
+    
+    def _create_title_frame(self):
+        """Create the title frame with image"""
+        title_frame = tk.Frame(
+            self.root,
+            bd=3,
+            relief="ridge",
+            bg=WindowConfig.BG_COLOR,
+            highlightbackground=WindowConfig.BG_COLOR
+        )
+        title_frame.place(relheight=0.225, relwidth=1, relx=0, rely=0)
+        
+        # Create image label
+        ImageLabel(title_frame, "images/title_image.png")
+    
+    def _create_main_frame(self):
+        """Create the main content frame"""
+        MainFrame(self.root, self.button_commands)
+    
+    def run(self):
+        """Start the application"""
+        self.root.mainloop()
 
-rel_width, rel_height = 0.6, 0.6
-rel_x, rel_y = 0.2, 0.2
 
-button_attr = [("start", (82, 65), lambda event=None: button_commands.start_button_command(main)),
-            ("roles", (86, 48), lambda event=None: button_commands.roles_button_command(main)),
-            ("prompts", (97, 85), lambda event=None: button_commands.prompts_button_command(main)),
-            ("night", (97, 85), lambda event=None: button_commands.night_button_command(main)),
-            ("day", (97, 85), lambda event=None: utils.db.change_first_disable()),
-            ("reset", (85, 75), lambda event=None: button_commands.reset_button_command())]
+def main():
+    """Application entry point"""
+    app = MainApplication()
+    app.run()
 
-main_buttons = {}
 
-for name, size, command in button_attr:
-    btn_name = f"{name}_button"
-    frame = globals()[f"{btn_name}_frame"]
-    image_1, image_2 = Image.open(f"{btn_name}/frame_1.png"), Image.open(f"{btn_name}/frame_2.png")
-
-    main_buttons[btn_name] = utils.Custom_Buttons(frame, image_1, image_2, size, command)
-    main_buttons[btn_name].place(relx=rel_x, rely= rel_y, relwidth= rel_width, relheight=rel_height)
-
-main.mainloop()
+if __name__ == "__main__":
+    main()
