@@ -1,367 +1,617 @@
 import tkinter as tk
-from tkinter import messagebox  # imported for potential dialogs (not used in this file)
+from tkinter import messagebox
 import customtkinter as ctk
-from utils import utils  # project utilities: db, nd_helper, image helpers, window initialization
-from PIL import Image, ImageTk  # imported for image handling (not directly used here but kept for compatibility)
+from utils import utils
+from PIL import Image, ImageTk
+from typing import Dict, List, Tuple, Callable, Optional
+from dataclasses import dataclass
+
+
+@dataclass
+class StyleConfig:
+    """Centralized styling configuration"""
+    FG_COLOR = "#0B0F14"
+    BD_COLOR = "#3A3F45"
+    HOVER_COLOR = "#FF2A2A"
+    TEXT_COLOR = "#E6EAF0"
+    LABEL_COLOR = "#8392a3"
+    BG_COLOR = "#152e2e"
+    
+    CORNER_RADIUS = 15
+    BORDER_WIDTH = 10
+    COMBO_BORDER_WIDTH = 5
+    
+    FONT_FAMILY = "Garamond"
+    BUTTON_FONT_SIZE = 30
+    LABEL_FONT_SIZE = 30
+    COMBO_FONT_SIZE = 22
+    DROPDOWN_FONT_SIZE = 18
+
+
+@dataclass
+class FrameConfig:
+    """Configuration for frame creation"""
+    name: str
+    relheight: float
+    relx: float = 0
+    rely: float = 0
+    relwidth: float = 1
+    image_path: Optional[str] = None
+
+
+class HoverEffect:
+    """Handles hover effects for widgets"""
+    
+    @staticmethod
+    def apply_to_widget(widget, hover_color: str, normal_color: str):
+        """Apply hover effect to a widget"""
+        widget.bind("<Enter>", lambda e: widget.configure(border_color=hover_color))
+        widget.bind("<Leave>", lambda e: widget.configure(border_color=normal_color))
+
+
+class RoleFrame:
+    """Represents a single role's UI frame (Mafia, Sheriff, or Doctor)"""
+    
+    def __init__(self, parent, name: str, config: Dict, style: StyleConfig):
+        self.name = name
+        self.parent = parent
+        self.style = style
+        self.config = config
+        
+        self.frame = self._create_frame()
+        self.phase_var = tk.StringVar(value=f"Phase {utils.nd_helper.night_phase}")
+        self.dialogue_var = tk.StringVar()
+        self.voted_var = tk.StringVar()
+        
+        self._setup_ui()
+    
+    def _create_frame(self) -> ctk.CTkFrame:
+        """Create the main frame for this role"""
+        frame = ctk.CTkFrame(
+            self.parent,
+            corner_radius=self.style.CORNER_RADIUS,
+            fg_color=self.style.FG_COLOR,
+            border_color=self.style.BD_COLOR,
+            bg_color=self.style.FG_COLOR,
+            border_width=self.style.BORDER_WIDTH
+        )
+        frame.place(
+            relx=self.config['relx'],
+            rely=self.config['rely'],
+            relwidth=self.config['relwidth'],
+            relheight=self.config['relheight']
+        )
+        HoverEffect.apply_to_widget(frame, self.style.HOVER_COLOR, self.style.BD_COLOR)
+        return frame
+    
+    def _setup_ui(self):
+        """Setup all UI elements for this role"""
+        self._create_title_label()
+        self.phase_combo = self._create_phase_combo()
+        self.dial_vot_label = self._create_dialogue_label()
+        self.dialogue_entry = self._create_dialogue_entry()
+        self.voted_combo = self._create_voted_combo()
+        self.copy_button = self._create_copy_button()
+    
+    def _create_title_label(self):
+        """Create the title label for the role"""
+        is_mafia = self.name == "Mafia"
+        rely = 0.05 if is_mafia else 0.1
+        size = 35 if is_mafia else 30
+        
+        label = ctk.CTkLabel(
+            master=self.frame,
+            text=self.name,
+            bg_color="transparent",
+            text_color=self.style.LABEL_COLOR,
+            font=ctk.CTkFont(self.style.FONT_FAMILY, size, "bold")
+        )
+        label.place(relx=0.05, rely=rely, relwidth=0.9, relheight=0.2)
+    
+    def _create_phase_combo(self) -> ctk.CTkComboBox:
+        """Create the phase selection combobox"""
+        is_mafia = self.name == "Mafia"
+        rel_height = 0.125 if is_mafia else 0.2
+        rel_y = 0.24 if is_mafia else 0.33
+        
+        combo = self._create_styled_combo(
+            variable=self.phase_var,
+            values=['Phase 1', 'Phase 2'],
+            command=None  # Will be set externally
+        )
+        combo.place(relx=0.25, rely=rel_y, relwidth=0.55, relheight=rel_height)
+        return combo
+    
+    def _create_dialogue_label(self) -> ctk.CTkLabel:
+        """Create the dialogue/vote label"""
+        is_mafia = self.name == "Mafia"
+        rel_height = 0.1 if is_mafia else 0.15
+        rel_y = 0.55 if is_mafia else 0.6
+        size = 30 if is_mafia else 20
+        
+        label = ctk.CTkLabel(
+            self.frame,
+            text="Dialogue : ",
+            fg_color='transparent',
+            text_color=self.style.TEXT_COLOR,
+            font=ctk.CTkFont(self.style.FONT_FAMILY, size, 'bold'),
+            anchor="n"
+        )
+        label.place(relx=0.1, rely=rel_y, relwidth=0.3, relheight=rel_height)
+        return label
+    
+    def _create_dialogue_entry(self) -> ctk.CTkEntry:
+        """Create the dialogue entry field"""
+        is_mafia = self.name == "Mafia"
+        rel_height = 0.1 if is_mafia else 0.15
+        rel_y = 0.55 if is_mafia else 0.6
+        
+        entry = ctk.CTkEntry(
+            self.frame,
+            corner_radius=7,
+            border_width=self.style.COMBO_BORDER_WIDTH,
+            border_color=self.style.BD_COLOR,
+            fg_color=self.style.FG_COLOR,
+            bg_color="transparent",
+            text_color=self.style.TEXT_COLOR,
+            font=(self.style.FONT_FAMILY, 18, 'bold'),
+            justify='center',
+            textvariable=self.dialogue_var
+        )
+        entry.place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
+        HoverEffect.apply_to_widget(entry, self.style.HOVER_COLOR, self.style.BD_COLOR)
+        return entry
+    
+    def _create_voted_combo(self) -> ctk.CTkComboBox:
+        """Create the voting combobox"""
+        values = self._get_vote_values()
+        self.voted_var.set(values[0] if values else "")
+        
+        combo = self._create_styled_combo(
+            variable=self.voted_var,
+            values=values,
+            command=None  # Will be set externally
+        )
+        return combo
+    
+    def _get_vote_values(self) -> List[str]:
+        """Get the list of players this role can vote for"""
+        if self.name == "Mafia":
+            # Mafia can only vote for non-mafia players
+            return [name for name, _ in utils.db.players_list 
+                    if name not in utils.db.mafias_list]
+        else:
+            # Sheriff and Doctor can vote for anyone
+            return [name for name, _ in utils.db.players_list]
+    
+    def _create_copy_button(self) -> ctk.CTkButton:
+        """Create the copy to clipboard button"""
+        size = 30 if self.name == "Mafia" else 18
+        
+        button = ctk.CTkButton(
+            self.frame,
+            text="📋",
+            command=None,  # Will be set externally
+            fg_color="transparent",
+            border_color="steelblue",
+            text_color=self.style.TEXT_COLOR,
+            border_width=3,
+            font=(self.style.FONT_FAMILY, size, "bold")
+        )
+        button.place(relx=0.1, rely=0.75, relwidth=0.1, relheight=0.15)
+        return button
+    
+    def _create_styled_combo(self, variable: tk.StringVar, values: List[str], 
+                            command: Optional[Callable]) -> ctk.CTkComboBox:
+        """Create a combobox with consistent styling"""
+        combo = ctk.CTkComboBox(
+            master=self.frame,
+            corner_radius=self.style.CORNER_RADIUS,
+            border_width=self.style.COMBO_BORDER_WIDTH,
+            bg_color="transparent",
+            font=(self.style.FONT_FAMILY, self.style.COMBO_FONT_SIZE, "bold"),
+            text_color=self.style.TEXT_COLOR,
+            fg_color=self.style.FG_COLOR,
+            border_color=self.style.BD_COLOR,
+            button_color=self.style.BD_COLOR,
+            button_hover_color=self.style.HOVER_COLOR,
+            dropdown_fg_color=self.style.FG_COLOR,
+            dropdown_text_color=self.style.TEXT_COLOR,
+            dropdown_font=(self.style.FONT_FAMILY, self.style.DROPDOWN_FONT_SIZE, "bold"),
+            variable=variable,
+            values=values,
+            command=command
+        )
+        HoverEffect.apply_to_widget(combo, self.style.HOVER_COLOR, self.style.BD_COLOR)
+        return combo
+    
+    def show_dialogue(self):
+        """Show dialogue entry, hide voting combo"""
+        if self.voted_combo.winfo_ismapped():
+            self.voted_combo.place_forget()
+        
+        is_mafia = self.name == "Mafia"
+        rel_height = 0.1 if is_mafia else 0.15
+        rel_y = 0.55 if is_mafia else 0.6
+        
+        self.dialogue_entry.place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
+        self.dial_vot_label.configure(text="Dialogue : ")
+    
+    def show_voting(self):
+        """Show voting combo, hide dialogue entry"""
+        if self.dialogue_entry.winfo_ismapped():
+            self.dialogue_entry.place_forget()
+        
+        is_mafia = self.name == "Mafia"
+        rel_height = 0.1 if is_mafia else 0.15
+        rel_y = 0.55 if is_mafia else 0.6
+        
+        self.voted_combo.place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
+        self.dial_vot_label.configure(text="Vote : ")
+    
+    def update_phase_display(self):
+        """Update the phase variable display"""
+        self.phase_var.set(f"Phase {utils.nd_helper.night_phase}")
+
+
+class MafiaControls:
+    """Special controls specific to the Mafia frame"""
+    
+    def __init__(self, mafia_frame: RoleFrame, style: StyleConfig):
+        self.mafia_frame = mafia_frame
+        self.style = style
+        self.player_var = tk.StringVar(value=utils.db.mafias_list[0] if utils.db.mafias_list else "")
+        
+        self._setup_ui()
+    
+    def _setup_ui(self):
+        """Setup mafia-specific UI elements"""
+        self._create_speaker_label()
+        self.player_combo = self._create_speaker_combo()
+        self.next_button = self._create_next_button()
+        self.done_button = self._create_done_button()
+    
+    def _create_speaker_label(self):
+        """Create the speaker selection label"""
+        label = ctk.CTkLabel(
+            self.mafia_frame.frame,
+            text="Speaker : ",
+            fg_color='transparent',
+            text_color=self.style.TEXT_COLOR,
+            font=ctk.CTkFont(self.style.FONT_FAMILY, 30, 'bold')
+        )
+        label.place(relx=0.1, rely=0.425, relwidth=0.3, relheight=0.1)
+    
+    def _create_speaker_combo(self) -> ctk.CTkComboBox:
+        """Create the speaker selection combobox"""
+        combo = ctk.CTkComboBox(
+            self.mafia_frame.frame,
+            corner_radius=self.style.CORNER_RADIUS,
+            border_width=self.style.COMBO_BORDER_WIDTH,
+            bg_color="transparent",
+            font=(self.style.FONT_FAMILY, self.style.COMBO_FONT_SIZE, "bold"),
+            text_color=self.style.TEXT_COLOR,
+            fg_color=self.style.FG_COLOR,
+            border_color=self.style.BD_COLOR,
+            button_color=self.style.BD_COLOR,
+            button_hover_color=self.style.HOVER_COLOR,
+            dropdown_fg_color=self.style.FG_COLOR,
+            dropdown_text_color=self.style.TEXT_COLOR,
+            dropdown_font=(self.style.FONT_FAMILY, self.style.DROPDOWN_FONT_SIZE, "bold"),
+            variable=self.player_var,
+            values=utils.db.mafias_list
+        )
+        combo.place(relx=0.425, rely=0.425, relwidth=0.475, relheight=0.1)
+        HoverEffect.apply_to_widget(combo, self.style.HOVER_COLOR, self.style.BD_COLOR)
+        return combo
+    
+    def _create_next_button(self) -> ctk.CTkButton:
+        """Create the NEXT button"""
+        button = ctk.CTkButton(
+            self.mafia_frame.frame,
+            text="NEXT",
+            command=None,  # Will be set externally
+            fg_color="steelblue",
+            border_color="blue",
+            text_color=self.style.TEXT_COLOR,
+            border_width=3,
+            font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
+        )
+        button.place(relx=0.65, rely=0.75, relwidth=0.25, relheight=0.15)
+        return button
+    
+    def _create_done_button(self) -> ctk.CTkButton:
+        """Create the DONE button"""
+        button = ctk.CTkButton(
+            self.mafia_frame.frame,
+            text="DONE",
+            command=None,  # Will be set externally
+            fg_color="darkgreen",
+            border_color="green",
+            hover_color="green",
+            text_color=self.style.TEXT_COLOR,
+            border_width=3,
+            font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
+        )
+        button.place(relx=0.25, rely=0.75, relwidth=0.25, relheight=0.15)
+        return button
+
+
+class NightPhaseWindow:
+    """Main window controller for Night Phase"""
+    
+    def __init__(self, master):
+        self.master = master
+        self.style = StyleConfig()
+        self.window = self._create_window()
+        self.frames = {}
+        self.role_frames: Dict[str, RoleFrame] = {}
+        self.mafia_controls: MafiaControls  # Will be initialized in _setup_mafia_controls
+        
+        self._setup_window()
+        self._setup_background_frames()
+        self._setup_role_frames()
+        self._setup_mafia_controls()
+        self._setup_event_handlers()
+        self._initialize_ui_state()
+    
+    def _create_window(self) -> tk.Toplevel:
+        """Create and configure the main window"""
+        window = tk.Toplevel(self.master)
+        window.transient(self.master)
+        window.grab_set()
+        window.title("Night Phase")
+        window.config(bg=self.style.BG_COLOR)
+        utils.initialize_windows(window)
+        return window
+    
+    def _setup_window(self):
+        """Setup window-specific configurations"""
+        pass
+    
+    def _setup_background_frames(self):
+        """Setup the title and body background frames"""
+        configs = [
+            FrameConfig("title_frame", 0.3, image_path="windows/night/night.png"),
+            FrameConfig("body_frame", 0.7, image_path="images/background_image.png")
+        ]
+        
+        last_height = 0
+        for config in configs:
+            frame = tk.Frame(self.window)
+            frame.place(relx=0, rely=last_height, relwidth=1, relheight=config.relheight)
+            last_height += config.relheight
+            
+            self.frames[config.name] = frame
+            
+            if config.image_path:
+                self._setup_background_image(frame, config.image_path)
+    
+    def _setup_background_image(self, frame: tk.Frame, image_path: str):
+        """Setup a resizable background image for a frame"""
+        label = tk.Label(frame)
+        label.place(relx=0, rely=0, relheight=1, relwidth=1)
+        
+        # Cache for optimization
+        size_cache = {"width": 0, "height": 0}
+        
+        def on_configure(event):
+            utils.image_config(event, label, size_cache, image_path)
+        
+        label.bind("<Configure>", on_configure)
+    
+    def _setup_role_frames(self):
+        """Setup all three role frames"""
+        configs = {
+            "Mafia": {"relheight": 0.9, "relx": 0.05, "rely": 0.05, "relwidth": 0.45},
+            "Sheriff": {"relheight": 0.45, "relx": 0.5, "rely": 0.05, "relwidth": 0.45},
+            "Doctor": {"relheight": 0.45, "relx": 0.5, "rely": 0.5, "relwidth": 0.45}
+        }
+        
+        for name, config in configs.items():
+            role_frame = RoleFrame(
+                self.frames["body_frame"],
+                name,
+                config,
+                self.style
+            )
+            self.role_frames[name] = role_frame
+    
+    def _setup_mafia_controls(self):
+        """Setup special controls for the Mafia frame"""
+        self.mafia_controls = MafiaControls(
+            self.role_frames["Mafia"],
+            self.style
+        )
+    
+    def _setup_event_handlers(self):
+        """Setup all event handlers and callbacks"""
+        # Phase change handler
+        for role_frame in self.role_frames.values():
+            role_frame.phase_combo.configure(command=self._on_phase_change)
+        
+        # Dialogue handlers
+        for name, role_frame in self.role_frames.items():
+            role_frame.dialogue_entry.bind(
+                "<FocusOut>",
+                lambda e, rf=role_frame: self._on_dialogue_change(rf)
+            )
+            role_frame.dialogue_entry.bind(
+                "<Return>",
+                lambda e, rf=role_frame: self._on_dialogue_change(rf)
+            )
+        
+        # Vote handlers
+        for role_frame in self.role_frames.values():
+            role_frame.voted_combo.configure(
+                command=lambda value: utils.nd_helper.add_vote(value.lower())
+            )
+        
+        # Copy button handlers
+        for name, role_frame in self.role_frames.items():
+            role_frame.copy_button.configure(
+                command=lambda n=name: self._copy_to_clipboard(n.lower())
+            )
+        
+        # Mafia-specific handlers
+        self.mafia_controls.next_button.configure(command=self._on_next_click)
+        self.mafia_controls.done_button.configure(command=self._on_done_click)
+    
+    def _on_phase_change(self, event: str):
+        """Handle phase change event"""
+        if '1' in event:
+            utils.nd_helper.night_phase = 1
+            self.mafia_controls.next_button.configure(
+                text="NEXT",
+                command=self._on_next_click,
+                fg_color="steelblue",
+                border_color="blue",
+                text_color=self.style.TEXT_COLOR,
+                border_width=3,
+                font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
+            )
+        elif '2' in event:
+            utils.nd_helper.night_phase = 2
+            if len(utils.db.mafias_list) == 1:
+                self.mafia_controls.next_button.configure(
+                    text="CHECK!",
+                    fg_color="green",
+                    border_color="lightgreen",
+                    hover_color="darkgreen",
+                    command=self._check_died
+                )
+        
+        # Update all role frames
+        for role_frame in self.role_frames.values():
+            role_frame.update_phase_display()
+        
+        self._update_ui_for_phase()
+    
+    def _update_ui_for_phase(self):
+        """Update UI elements based on current phase"""
+        for role_frame in self.role_frames.values():
+            if utils.nd_helper.night_phase == 1:
+                role_frame.show_dialogue()
+            else:
+                role_frame.show_voting()
+    
+    def _on_dialogue_change(self, role_frame: RoleFrame):
+        """Handle dialogue entry change"""
+        speaker = self.mafia_controls.player_var.get()
+        dialogue = role_frame.dialogue_var.get()
+        utils.nd_helper.add_dialogue(speaker, dialogue)
+    
+    def _on_next_click(self):
+        """Handle NEXT button click - cycle through speakers and phases"""
+        mafias_list = utils.db.mafias_list
+        if not mafias_list:
+            return
+        
+        current_speaker = self.mafia_controls.player_var.get()
+        current_index = mafias_list.index(current_speaker) if current_speaker in mafias_list else 0
+        
+        # Check if this is the last speaker
+        is_last_speaker = current_index == len(mafias_list) - 1
+        is_last_second_speaker = current_index == len(mafias_list) - 2
+        
+        if utils.nd_helper.night_phase == 1:
+            if is_last_speaker:
+                # Last speaker in Phase 1: move to Phase 2 and reset to first speaker
+                self._on_phase_change("2")
+                self.mafia_controls.player_var.set(mafias_list[0])
+            else:
+                # Move to next speaker in Phase 1
+                self.mafia_controls.player_var.set(mafias_list[current_index + 1])
+        
+        elif utils.nd_helper.night_phase == 2:
+            if is_last_second_speaker:
+                # Last speaker in Phase 2: change button to CHECK
+                self.mafia_controls.next_button.configure(
+                    text="CHECK!",
+                    fg_color="green",
+                    border_color="lightgreen",
+                    hover_color="darkgreen",
+                    command=self._check_died
+                )
+                self.mafia_controls.player_var.set(mafias_list[current_index + 1])
+            else:
+                # Move to next speaker in Phase 2
+                self.mafia_controls.player_var.set(mafias_list[current_index + 1])
+    
+    def _check_died(self):
+        """Check if the targeted player dies"""
+        target = utils.nd_helper.most_voted()[0]
+        if target is None:
+            utils.nd_helper.change_day_message("No one")
+            message = "No one"
+        else:
+            died = utils.nd_helper.check_died(target)
+            message = target if died else "No one"
+            utils.nd_helper.change_day_message(message)
+        messagebox.showinfo("Night Result", f"{message} has died tonight. Day message updated.")
+    
+    def _on_done_click(self):
+        """Handle DONE button click - increase night number and close window"""
+        utils.nd_helper.night_number += 1
+        # Close window after 100ms
+        self.window.after(100, self.window.destroy)
+    
+    def _copy_to_clipboard(self, role: str):
+        """Copy the appropriate prompt to clipboard"""
+        prompts = utils.db.prompts['night']
+        
+        if role == "mafia":
+            prompt_data = prompts['mafia']
+            dialogues = utils.nd_helper.get_dialogues()
+        elif role == "sheriff":
+            prompt_data = prompts['sheriff']
+            dialogues = ""
+        else:  # doctor
+            prompt_data = prompts['doctor']
+            dialogues = ""
+        
+        prompt = prompt_data['prompt']
+        placeholders = prompts['mafia']['placeholders']
+        
+        current_actions = {
+            "mafia": [
+                "Discuss who you want to eliminate in 1-2 lines for your teammates!",
+                "In just one word, select who do you want to eliminate!"
+            ],
+            "sheriff": [
+                "Explain your thoughts about who you want to investigate!",
+                "In just one word, select who do you want to investigate!"
+            ],
+            "doctor": [
+                "Explain your thoughts about who you want to save!",
+                "In just one word, select who do you want to save!"
+            ]
+        }
+        
+        updated_prompt = prompt.replace(
+            placeholders['night_number'], str(utils.nd_helper.night_number)
+        ).replace(
+            placeholders['phase_number'], str(utils.nd_helper.night_phase)
+        ).replace(
+            placeholders['current_action'],
+            current_actions[role][utils.nd_helper.night_phase - 1]
+        ).replace(
+            "[Dialogues]",
+            f"### Dialogues:\n{dialogues}"
+        )
+        
+        self.window.clipboard_clear()
+        self.window.clipboard_append(updated_prompt)
+        self.window.update()
+    
+    def _initialize_ui_state(self):
+        """Initialize the UI to the correct state"""
+        self._update_ui_for_phase()
+
 
 def create_window(master):
     """
     Create a toplevel window for the Night Phase prompts.
-    All UI elements are created inside this window and hooked to utils (db and nd_helper).
+    This is the entry point that maintains backward compatibility.
     """
-    # Create a modal toplevel window tied to the master window
-    window = tk.Toplevel(master)
-    window.transient(master)
-    window.grab_set()
-    window.title("Night Phase")
-    window.config(bg="#152e2e")
-    utils.initialize_windows(window)  # project-specific window initialization (size, position etc.)
-
-    # Configuration for the top title image frame and the body background frame
-    frames_config = [
-        {
-            "name": "title_frame",
-            "relheight": 0.3,
-            "image_path": "windows/night/night.png"
-        },
-        {
-            "name": "body_frame",
-            "relheight": 0.7,
-            "image_path": "images/background_image.png"
-        }
-    ]
-
-    frames = {}
-    last_height = 0
-    
-    # Create and place the frames defined in frames_config.
-    # Each frame gets a Label covering the entire frame for showing a background image.
-    # The label binds to <Configure> to handle resizing via utils.image_config.
-    for frame_config in frames_config:
-        frame_name = frame_config["name"]
-        rel_height = frame_config["relheight"]
-        image_path = frame_config["image_path"]
-
-        frames[frame_name] = tk.Frame(window)
-        frames[frame_name].place(relx=0, rely=last_height, relwidth=1, relheight=rel_height)
-        last_height += rel_height
-
-        # Label used as a background image placeholder/stretchable canvas
-        label = tk.Label(frames[frame_name])
-        label.place(relx=0, rely=0, relheight=1, relwidth=1)
-        # Bind reconfigure to update the image via the util helper.
-        # Lambda captures label and image_path. "last" dict caches previous size to optimize re-scaling.
-        label.bind("<Configure>", lambda event, lbl=label, last={"width": 0, "height": 0}, pth=image_path: utils.image_config(event, lbl, last, pth))
-
-    # Configuration for three action frames inside the body: mafia, sheriff, doctor
-    action_frames_config = [
-        {
-            "name": "mafia_frame",
-            "relheight": 0.9,
-            "relx": 0.05,
-            "rely": 0.05
-        },
-        {
-            "name": "sheriff_frame",
-            "relheight": 0.45,
-            "relx" : 0.5,
-            "rely": 0.05
-        },
-        {
-            "name": "doctor_frame",
-            "relheight": 0.45,
-            "relx": 0.5,
-            "rely": 0.5
-        }
-    ]
-
-    # Visual constants for frames and hover colors
-    fg_color = "#0B0F14"
-    bd_color = "#3A3F45"
-    hvr_color = "#FF2A2A"
-
-    # Hover handlers to change the border color of CTkFrame on mouse enter/leave
-    def on_enter(frame):
-        frame.configure(border_color=hvr_color)
-    def on_exit(frame):
-        frame.configure(border_color=bd_color)
-
-    # Create the customtkinter frames for actions with consistent styling and placement.
-    action_frames = {}
-
-    for frame_config in action_frames_config:
-        frame_name = frame_config["name"]
-        rel_height = frame_config["relheight"]
-        rel_x = frame_config.get("relx", 0)
-        rel_y = frame_config.get("rely", 0)
-        rel_width = 0.45  # fixed width fraction for action frames
-
-        action_frames[frame_name] = ctk.CTkFrame(
-            frames["body_frame"],
-            corner_radius=15,
-            fg_color=fg_color,
-            border_color=bd_color,
-            bg_color=fg_color,
-            border_width=10
-        )
-        action_frames[frame_name].place(relx=rel_x, rely=rel_y, relwidth=rel_width, relheight=rel_height)
-        
-        # Bind hover events to change frame border color for visual feedback.
-        # Lambda captures the specific frame instance.
-        action_frames[frame_name].bind("<Enter>", lambda e, f=action_frames[frame_name]: on_enter(f))
-        action_frames[frame_name].bind("<Leave>", lambda e, f=action_frames[frame_name]: on_exit(f))
-
-    def ui_changer():
-        """Toggle between dialogue and voting UI based on current phase."""
-        for text in title_text:
-            rel_height = 0.1 if text == "Mafia" else 0.15
-            rel_y = 0.55 if text == "Mafia" else 0.6
-            
-            if utils.nd_helper.night_phase == 1:
-                # Show dialogue entry
-                if voted_combos[text.lower()][0].winfo_ismapped():
-                    voted_combos[text.lower()][0].place_forget()
-                dialogue_entries[text.lower()][0].place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
-                dial_vot_labels[text.lower()].configure(text="Dialogue : ")
-            else:
-                # Show voting combo
-                if dialogue_entries[text.lower()][0].winfo_ismapped():
-                    dialogue_entries[text.lower()][0].place_forget()
-                voted_combos[text.lower()][0].place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
-                dial_vot_labels[text.lower()].configure(text="Vote : ")
-
-    def check_died(event=None):
-        """Check if the targeted player dies considering the doctor's save."""
-        target = utils.nd_helper.most_voted()[0]
-        if target is None:
-            utils.nd_helper.change_day_message("No one")
-        else:
-            died = utils.nd_helper.check_died(target)
-            if not died:
-                utils.nd_helper.change_day_message("No one")
-            else:
-                utils.nd_helper.change_day_message(target)
-
-    # Titles for the three action frames in the same order as action_frames.values()
-    title_text = ["Mafia", "Sheriff", "Doctor"]
-    f_names = list(action_frames.values())
-
-    # Phase selection values (Phase 1 or Phase 2) and containers to hold the StringVar and boxes
-    phases = ['Phase 1', 'Phase 2']
-    phase_vars = {}
-    phase_boxes = {}
-
-    # change_phase receives a value (event-like) and updates the shared nd_helper.night_phase
-    # Also updates the visible phase StringVars for each role box.
-    def change_phase(event):
-        if '1' in event:
-            utils.nd_helper.night_phase = 1
-            next_btn.configure(text="NEXT", command=next_prompt, fg_color="steelblue", border_color="blue", text_color="#E6EAF0", border_width=3, font=("Garamond", 30, "bold"))
-        elif '2' in event:
-            utils.nd_helper.night_phase = 2
-            next_btn.configure(text="CHECK!", fg_color="green", border_color="lightgreen", hover_color="darkgreen")
-        for var in phase_vars.values():
-            var.set(value=f"Phase {utils.nd_helper.night_phase}")
-        ui_changer()
-        
-    # Populate each action frame with a title label and a phase selection combobox.
-    # There is slightly different layout/styling for Mafia vs Sheriff/Doctor.
-    for f_name, text in zip(f_names, title_text):
-        if text == "Mafia":
-            rely = 0.05
-            size = 35
-            rel_height=0.125
-            rel_y = 0.24
-        else:
-            rely = 0.1
-            size = 30
-            rel_height=0.2
-            rel_y = 0.33
-        # Title label for the role
-        label = ctk.CTkLabel(
-                master=f_name,
-                text=text,
-                bg_color="transparent",
-                text_color="#8392a3",
-                font=ctk.CTkFont("Garamond", size, "bold")
-            )
-        label.place(relx=0.05, rely=rely, relwidth=0.9, relheight=0.2)
-
-        # Each role maintains a StringVar representing the currently selected phase.
-        phase_var = tk.StringVar(value=f"Phase {utils.nd_helper.night_phase}")
-        phase_vars[text] = phase_var
-
-        # ComboBox for selecting Phase 1/2 for this role. Hooks the change_phase command.
-        phase_box = ctk.CTkComboBox(master=f_name,
-            corner_radius=15,
-            border_width=5,
-            bg_color="transparent", 
-            font=("Garamond", 22, "bold"), 
-            text_color="#E6EAF0", 
-            fg_color=fg_color, 
-            border_color=bd_color,
-            button_color=bd_color, 
-            button_hover_color=hvr_color, 
-            dropdown_fg_color=fg_color, 
-            dropdown_text_color="#E6EAF0", 
-            dropdown_font=("Garamond", 18, "bold"), 
-            variable=phase_var, 
-            values=phases,
-            command=change_phase)
-        phase_box.place(relx=0.25, rely=rel_y, relwidth=0.55, relheight=rel_height)
-        # Hover feedback for the combo box itself (uses the same on_enter/on_exit handlers)
-        phase_box.bind("<Enter>", lambda event=None, f=phase_box: on_enter(frame=f))
-        phase_box.bind("<Leave>", lambda event=None, f=phase_box: on_exit(frame=f))
-        phase_boxes[text] = phase_box
-
-    # --- Mafia frame specific widgets follow ---
-
-    # Label indicating the current speaking player in the mafia frame
-    player_label = ctk.CTkLabel(action_frames["mafia_frame"], text="Speaker : ", fg_color='transparent', text_color='#E6EAF0', font=ctk.CTkFont("Garamond", 30, 'bold'))
-    player_label.place(relx=0.1, rely=0.425, relwidth=0.3, relheight=0.1)
-
-    # Values for the mafia speaker combobox come from utils.db.mafias_list
-    values = utils.db.mafias_list
-    player_var = tk.StringVar(value=values[0])
-
-    # Combobox to select which mafia member is speaking
-    player_combo = ctk.CTkComboBox(action_frames["mafia_frame"],
-            corner_radius=15,
-            border_width=5,
-            bg_color="transparent", 
-            font=("Garamond", 22, "bold"), 
-            text_color="#E6EAF0", 
-            fg_color=fg_color, 
-            border_color=bd_color,
-            button_color=bd_color, 
-            button_hover_color=hvr_color, 
-            dropdown_fg_color=fg_color, 
-            dropdown_text_color="#E6EAF0", 
-            dropdown_font=("Garamond", 18, "bold"), 
-            variable=player_var, 
-            values=values)
-    player_combo.bind("<Enter>", lambda event=None, f=player_combo: on_enter(frame=f))
-    player_combo.bind("<Leave>", lambda event=None, f=player_combo: on_exit(frame=f))
-    player_combo.place(relx=0.425, rely=0.425, relwidth=0.475, relheight=0.1)
-
-    # Dialogue label and entry for mafia to add their spoken lines
-    dial_vot_labels = {}
-    dialogue_entries = {}
-    for text in title_text:
-        if text == "Mafia":
-            rel_height=0.1
-            rel_y = 0.55
-            size = 30
-        else:
-            rel_height=0.15
-            rel_y = 0.6
-            size = 20
-        dial_vot_label = ctk.CTkLabel(action_frames[f"{text.lower()}_frame"], text="Dialogue : ", fg_color='transparent', text_color='#E6EAF0', font=ctk.CTkFont("Garamond", size, 'bold'), anchor="n")
-        dial_vot_label.place(relx=0.1, rely=rel_y, relwidth=0.3, relheight=rel_height)
-        dial_vot_labels[text.lower()] = dial_vot_label
-
-        dialogue_var = tk.StringVar()
-        dialogue_entry = ctk.CTkEntry(action_frames[f"{text.lower()}_frame"], corner_radius=7, border_width=5, border_color=bd_color, fg_color=fg_color, bg_color="transparent", text_color="#E6EAF0", font=("Garamond", 18, 'bold'), justify='center', textvariable=dialogue_var)
-        dialogue_entry.place(relx=0.425, rely=rel_y, relwidth=0.475, relheight=rel_height)
-        dialogue_entries[text.lower()] = (dialogue_entry, dialogue_var)
-
-        # Bind focus out and return key to add dialogue via nd_helper
-        dialogue_entry.bind("<FocusOut>", lambda event=None, var=dialogue_var: utils.nd_helper.add_dialogue(player_var.get(), var.get()))
-        dialogue_entry.bind("<Return>", lambda event=None, var=dialogue_var: utils.nd_helper.add_dialogue(player_var.get(), var.get()))
-
-        dialogue_entry.bind("<Enter>", lambda event=None, f=dialogue_entry: on_enter(frame=f))
-        dialogue_entry.bind("<Leave>", lambda event=None, f=dialogue_entry: on_exit(frame=f))
-
-
-    # Helper to add a vote (lowercases the provided name before passing to nd_helper)
-    def add_vote(event):
-        utils.nd_helper.add_vote(event.lower())
-
-
-    # Build the list of vote targets: all players who are not mafias
-    mafia_values = []
-    general_values = []
-    for name, _ in utils.db.players_list:
-        if name not in utils.db.mafias_list:
-            mafia_values.append(name)
-        general_values.append(name)
-    voted_combos = {}
-
-    for text in title_text:
-        if text == "Mafia":
-            values = mafia_values
-        else:
-            values = general_values
-        voted_var = tk.StringVar(value=values[0])
-        voted_combo = ctk.CTkComboBox(action_frames[f"{text.lower()}_frame"],
-                corner_radius=15,
-                border_width=5,
-                bg_color="transparent", 
-                font=("Garamond", 22, "bold"), 
-                text_color="#E6EAF0", 
-                fg_color=fg_color, 
-                border_color=bd_color,
-                button_color=bd_color, 
-                button_hover_color=hvr_color, 
-                dropdown_fg_color=fg_color, 
-                dropdown_text_color="#E6EAF0", 
-                dropdown_font=("Garamond", 18, "bold"), 
-                variable=voted_var, 
-                values=values,
-                command=add_vote)
-        voted_combo.bind("<Enter>", lambda event=None, f=voted_combo: on_enter(frame=f))
-        voted_combo.bind("<Leave>", lambda event=None, f=voted_combo: on_exit(frame=f))
-        voted_combos[f"{text.lower()}"] = [voted_combo, voted_var]
-
-    # Retrieve mafia prompt template and placeholders from the project DB
-    mafia_prompt = utils.db.prompts['night']['mafia']['prompt']
-    shriff_prompt = utils.db.prompts['night']['sheriff']['prompt']
-    doctor_prompt = utils.db.prompts['night']['doctor']['prompt']
-    placeholders = utils.db.prompts['night']['mafia']['placeholders']
-
-    # Copy the constructed prompt to the clipboard. The prompt is built using placeholders
-    # plus current dialogues from nd_helper.get_dialogues().
-    def copy_to_clipboard(event:str):
-        if event is None:
-            event = "mafia"
-            prompt = mafia_prompt
-        elif event.lower() == "mafia":
-            dialogues = utils.nd_helper.get_dialogues()
-            prompt = mafia_prompt
-        else:
-            if event.lower() == "sheriff":
-                prompt = shriff_prompt
-            else:
-                prompt = doctor_prompt
-            dialogues = ""
-
-        current_actions = {"mafia": ["Discuss who you want to eliminate in 1-2 lines for your teammates!", "In just one word, select who do you want to eliminate!"],
-                           "sheriff": ["Explain your thoughts about who you want to investigate!", "In just one word, select who do you want to investigate!"],
-                           "doctor": ["Explain your thoughts about who you want to save!", "In just one word, select who do you want to save!"]}
-        updated_prompt = prompt.replace(placeholders['night_number'], str(utils.nd_helper.night_number)).replace(placeholders['phase_number'], str(utils.nd_helper.night_phase)).replace(placeholders['current_action'], current_actions[event.lower()][utils.nd_helper.night_phase-1]).replace("[Dialogues]", f"### Dialogues:\n{dialogues}")
-        window.clipboard_clear()
-        window.clipboard_append(updated_prompt)
-        window.update()
-
-    ui_changer()
-
-    # Handler for the NEXT button: progresses mafia UI from discussion to vote if only one mafia remains.
-    # Uses and updates UI elements and nd_helper state accordingly.
-    def next_prompt(event=None):
-        current_player = player_var.get()
-        nonlocal mafia_prompt
-        if len(utils.db.mafias_list) == 1:
-            # If we're in phase 1, switch to phase 2, clear dialogues and change UI to voting mode.
-            if utils.nd_helper.night_phase == 1:
-                change_phase("2")
-                next_btn.configure(text="CHECK!", fg_color="green", border_color="lightgreen", hover_color="darkgreen", command=check_died)
-
-    # Copy-to-clipboard button placed inside the mafia frame
-    for text in title_text:
-        size = 30 if text == "Mafia" else 18
-        copy_btn = ctk.CTkButton(action_frames[f"{text.lower()}_frame"], text="📋", command=lambda event=text.lower(): copy_to_clipboard(event), fg_color="transparent", border_color="steelblue", text_color="#E6EAF0", border_width=3, font=("Garamond", size, "bold"))
-        copy_btn.place(relx=0.1, rely=0.75, relwidth=0.1, relheight=0.15)
-
-    # NEXT button that advances the mafia prompt flow; wired to next_prompt
-    next_btn = ctk.CTkButton(action_frames["mafia_frame"], text="NEXT", command=next_prompt, fg_color="steelblue", border_color="blue", text_color="#E6EAF0", border_width=3, font=("Garamond", 30, "bold"))
-    next_btn.place(relx=0.65, rely=0.75, relwidth=0.25, relheight=0.15)
+    NightPhaseWindow(master)

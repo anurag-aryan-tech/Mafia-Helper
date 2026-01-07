@@ -37,6 +37,9 @@ class Button_Commands:
         if not utils.db.first_disable:
             messagebox.showwarning("Warning", "Set the Names and Roles of players to proceed!")
             return
+        elif utils.nd_helper.night_number > utils.nd_helper.day_number:
+            messagebox.showwarning("Warning", "Finish the current day before starting a new night!")
+            return
         night_window.create_window(master)
 
     
