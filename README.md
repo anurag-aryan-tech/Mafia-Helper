@@ -18,6 +18,7 @@ Running Mafia with LLMs as players is surprisingly complex. As the mediator, you
 
 **Mafia Mediator’s Dashboard** solves this by acting as a **single source of truth** for the entire game.
 
+
 > Think of it as a Dungeon Master screen—but for Mafia, and built specifically for AI players.
 > 
 
@@ -111,8 +112,7 @@ Mafias/
 │   └── night/
 │
 ├── images/                  # Backgrounds & UI assets
-├── [role]_button/           # Button animation frames
-└── color/                   # Color palette references
+└── roles_button/           # Button animation frames
 
 ```
 
@@ -129,10 +129,17 @@ Mafias/
 ### Installation
 
 ```bash
-git clone <repository-url>
-cd Mafias
+
+git clone https://github.com/anurag-aryan-tech/Mafia-Helper.git
+cd Mafia-Helper
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+
 pip install -r requirements.txt
 python Helper.py
 
@@ -164,7 +171,7 @@ python Helper.py
 ### Mafia Balance
 
 ```
-Max Mafia = ⌊Total Players / 2⌋
+Max Mafia = Less than ⌊Total Players / 2⌋
 
 ```
 
