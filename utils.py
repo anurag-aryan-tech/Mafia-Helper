@@ -19,7 +19,7 @@ class Utilities:
         zoomed = window.state() == "zoomed"
         window.state("normal" if zoomed else "zoomed")
 
-    def calculate_x_y(self, width: int, height: int, window: tk.Tk) -> Tuple[int, int]:
+    def calculate_x_y(self, width: int, height: int, window: tk.Tk|tk.Toplevel) -> Tuple[int, int]:
         """Calculate x and y position to center the window on screen"""
         window.update()
         x = (window.winfo_screenwidth() - width) // 2

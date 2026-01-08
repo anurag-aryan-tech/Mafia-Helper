@@ -129,7 +129,7 @@ class MainFrame:
             ("roles", (86, 48), lambda: self.button_commands.roles_button_command(self._get_root())),
             ("prompts", (97, 85), lambda: self.button_commands.prompts_button_command(self._get_root())),
             ("night", (97, 85), lambda: self.button_commands.night_button_command(self._get_root())),
-            ("day", (97, 85), lambda: utils.db.change_first_disable()),
+            ("day", (97, 85), lambda: self.button_commands.day_button_command(self._get_root())),
             ("reset", (85, 75), lambda: self.button_commands.reset_button_command())
         ]
         

@@ -5,6 +5,7 @@ from windows.total_players import total_player_window
 from windows.roles import roles_window
 from windows.prompts import prompts_window
 from windows.night import night_window
+from windows.day import day_window
 
 class Button_Commands:
     def __init__(self):
@@ -41,6 +42,15 @@ class Button_Commands:
             messagebox.showwarning("Warning", "Finish the current day before starting a new night!")
             return
         night_window.create_window(master)
+
+    def day_button_command(self, master):
+        # if not utils.db.first_disable:
+        #     messagebox.showwarning("Warning", "Set the Names and Roles of players to proceed!")
+        #     return
+        # elif utils.nd_helper.day_number >= utils.nd_helper.night_number:
+        #     messagebox.showwarning("Warning", "Finish the current night before starting a new day!")
+        #     return
+        day_window.create_window(master)
 
     
         
