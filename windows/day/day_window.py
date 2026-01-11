@@ -262,7 +262,8 @@ class InteractionFrame(FrameBase):
 
     def _on_entering_dialogue(self, dialogue: str):
         utils.nd_helper.add_dialogue(self.player_var.get(), dialogue)
-        self.dialogue_entry.delete(0, tk.END) # pyright: ignore[reportOptionalMemberAccess]
+        if self.dialogue_entry:  # ✅ Check before access
+            self.dialogue_entry.delete(0, tk.END)
         self._update_prompt()
 
     def _on_voting(self, votee: str):
@@ -277,7 +278,7 @@ class InteractionFrame(FrameBase):
     def _check_died(self):
         results = utils.nd_helper.most_voted()
         self.player_died = results[0]
-        self.died_reason = results[0]
+        self.died_reason = results[1]
 
     def _next_button_click(self, event=None):
         curr_player = self.player_var.get()
@@ -292,6 +293,7 @@ class InteractionFrame(FrameBase):
             else:
                 # Move to next player
                 self.player_var.set(self.players_list[players_pos + 1])
+                return
         else:
             # Phase 2: Voting phase
             if curr_player == self.players_list[-2]:
@@ -300,6 +302,7 @@ class InteractionFrame(FrameBase):
                 if self.next_button:
                     self.next_button.configure(fg_color="green", border_color="darkgreen", text="🔍")
             elif curr_player == self.players_list[-1]:
+                self._check_died()
                 self.current_prompt = f"""## Day Results
 - **Day Number :** {self.day_number}
 - **Player Died : {self.player_died}
@@ -315,6 +318,7 @@ class InteractionFrame(FrameBase):
             else:
                 # Regular player in phase 2, move to next player
                 self.player_var.set(self.players_list[players_pos + 1])
+                return
 
         self._update_prompt()
                     
@@ -468,6 +472,8 @@ class FooterFrame(FrameBase):
             widget_config=border_frame
         )
 
+    
+
     def _create_dialogue_entry(self):
         self.interaction.dialogue_entry = ctk.CTkEntry(
             self.footer_frame,
@@ -484,7 +490,11 @@ class FooterFrame(FrameBase):
             self.style.HOVER_COLOR,
             self.style.BD_COLOR
         )
-        self.interaction.dialogue_entry.bind("<Return>", lambda event=None: self.interaction._on_entering_dialogue(self.interaction.dialogue_entry.get())) # pyright: ignore[reportOptionalMemberAccess]
+        def _on_dialogue_submit(event=None):
+            if self.interaction.dialogue_entry:
+                dialogue = self.interaction.dialogue_entry.get()
+                self.interaction._on_entering_dialogue(dialogue)
+        self.interaction.dialogue_entry.bind("<Return>", _on_dialogue_submit)
 
     def _create_vote_combo(self):
         self.interaction.vote_var.set(f"{self.interaction.players_list[0]}")
