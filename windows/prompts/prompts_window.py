@@ -55,11 +55,13 @@ class HoverEffects:
     """Utility class for applying hover effects"""
     
     @staticmethod
-    def apply_border_hover(widget: ctk.CTkFrame|ctk.CTkComboBox, hover_color: str, normal_color: str):
+    def apply_border_hover(widget: ctk.CTkFrame|ctk.CTkComboBox|ctk.CTkButton|ctk.CTkLabel|ctk.CTkEntry, hover_color: str, normal_color: str, widget_config=None):
+        if not widget_config:
+            widget_config = widget
         """Apply border color hover effect"""
-        widget.bind("<Enter>", lambda e: widget.configure(border_color=hover_color))
-        widget.bind("<Leave>", lambda e: widget.configure(border_color=normal_color))
-    
+        widget.bind("<Enter>", lambda e: widget_config.configure(border_color=hover_color))
+        widget.bind("<Leave>", lambda e: widget_config.configure(border_color=normal_color))
+
     @staticmethod
     def apply_text_hover(widget: ctk.CTkLabel, hover_color: str, normal_color: str):
         """Apply text color hover effect"""
