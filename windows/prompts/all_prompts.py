@@ -1013,7 +1013,8 @@ Threats: [Who suspects us]
 - **Phase:** [PHASE_NUMBER]  
 - **Current Action:** [CURRENT_ACTION]
 
-[Dialogues]""",
+### Dialogues:
+[DIALOGUES]""",
         'placeholders' : {
             "day_number" : '[DAY_NUMBER]',
             "phase_number" : '[PHASE_NUMBER]',
