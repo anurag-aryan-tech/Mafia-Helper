@@ -1,137 +1,280 @@
-<!-- ===================== HEADER ===================== -->
-<div align="center">
-  <img
-    src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=260&section=header&text=Hi%20there,%20I'm%20Your%20Name&fontSize=72&fontAlignY=38&desc=Full%20Stack%20Developer%20•%20Open%20Source%20Enthusiast&descAlignY=58&descAlign=50"
-    alt="Header"
-    width="100%"
-  />
-</div>
+# 🕵️ Mafia Mediator’s Dashboard
 
-<!-- ===================== INTRO ===================== -->
-<div align="center">
+A **desktop game-master dashboard** built with **Python + Tkinter** that streamlines mediating the *Mafia* party game—especially when playing with **LLM players** like ChatGPT, Claude, Grok, Gemini, and others.
 
-  <img
-    src="https://komarev.com/ghpvc/?username=yourusername&style=flat-square&color=blueviolet"
-    alt="Profile Views"
-  />
-
-  <br/><br/>
-
-  <p>
-    <b>I build scalable web applications and craft intuitive user experiences.</b><br/>
-    Passionate about clean architecture, performance, and developer experience.
-  </p>
-
-  <p>
-    ☁️ Exploring <b>Cloud Architecture</b> &nbsp;•&nbsp;
-    🤖 Integrating <b>AI into real-world products</b>
-  </p>
-
-</div>
+This tool centralizes **player management, role assignment, prompt generation, and night/day workflows**, eliminating the cognitive and logistical overhead of running Mafia across multiple AI chat windows.
 
 ---
 
-## ⚡ What I'm Up To
+## 🎮 What Is This?
 
-- 🔭 Currently building **[Project Name](#)** — a short, punchy description goes here
-- 🌱 Learning **Go**, **Microservices**, and **Distributed Systems**
-- 👯 Open to collaborating on **Open Source Tools & Dev Infrastructure**
-- 💬 Ask me about **React, Node.js, APIs, Docker, and DevOps**
-- ⚡ Fun fact: *I code faster when listening to Synthwave.*
+Running Mafia with LLMs as players is surprisingly complex. As the mediator, you must:
 
----
+- Track who is alive and dead
+- Remember each player’s secret role
+- Repeatedly rewrite and customize prompts
+- Maintain game state across day/night cycles
+- Coordinate multiple LLM chats simultaneously
 
-## 🛠️ Tech Stack & Tools
+**Mafia Mediator’s Dashboard** solves this by acting as a **single source of truth** for the entire game.
 
-<div align="left">
 
-  <!-- Languages -->
-  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black"/>
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
-
-  <br/>
-
-  <!-- Frontend -->
-  <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white"/>
-
-  <br/>
-
-  <!-- Backend / DevOps -->
-  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white"/>
-
-</div>
+> Think of it as a Dungeon Master screen—but for Mafia, and built specifically for AI players.
+> 
 
 ---
 
-## 📸 Featured Work
+## ✨ Core Features
 
-<!-- Replace these with real screenshots or demo GIFs -->
-<!-- Recommended size: 1200x600 -->
+### 🧑‍🤝‍🧑 Player & Role Management
 
-<p align="center">
-  <img src="https://via.placeholder.com/1200x600?text=Project+Demo+GIF" alt="Project Demo"/>
-</p>
-
-<p align="center">
-  <i>Short caption explaining what this project does and why it’s cool.</i>
-</p>
+- Supports **4–11 players**
+- Roles: Villager, Mafia, Sheriff, Doctor
+- Automatic Mafia count validation based on player total
+- Custom player names (e.g., “ChatGPT-4”, “Claude”, “Gemini”)
+- Role locking to prevent mid-game tampering
 
 ---
 
-## 📊 GitHub Analytics
+### 🧠 Prompt System (LLM-Focused)
 
-<div align="center">
+- Rich, role-specific prompts (1,500–2,000+ words each)
+- Dynamic placeholder replacement per player
+- Turn-order–aware instructions
+- Mafia prompts include partner identities
+- One-click **copy to clipboard** for fast sharing
 
-  <img
-    height="180em"
-    src="https://github-readme-stats.vercel.app/api?username=yourusername&show_icons=true&theme=tokyonight&include_all_commits=true&count_private=true"
-    alt="GitHub Stats"
-  />
+Supported prompt types:
 
-  <img
-    height="180em"
-    src="https://github-readme-stats.vercel.app/api/top-langs/?username=yourusername&layout=compact&theme=tokyonight"
-    alt="Top Languages"
-  />
-
-</div>
+- Initial role & rules prompts
+- Night-phase decision prompts
+- Investigation & protection result prompts
 
 ---
 
-## 🧠 Currently Interested In
+### 🌙 Night Phase Automation
 
-- System design & scalable architectures
-- Developer tooling & DX
-- AI-assisted development
-- Performance optimization
+Dedicated UI for each role:
 
----
+- **Mafia**
+    - Phase 1: Discussion logging
+    - Phase 2: Voting & elimination logic
+- **Sheriff**
+    - Investigation reasoning + result generation
+- **Doctor**
+    - Protection selection & confirmation
 
-## 🤝 Let’s Connect
+The system automatically:
 
-<p align="left">
-
-  <a href="https://linkedin.com/in/yourusername">
-    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/>
-  </a>
-
-  <a href="https://twitter.com/yourusername">
-    <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white"/>
-  </a>
-
-  <a href="mailto:your.email@example.com">
-    <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white"/>
-  </a>
-
-</p>
+- Tracks votes
+- Applies Doctor protection
+- Logs night outcomes
+- Advances round counters
 
 ---
 
-<div align="center">
-  <i>“Build things that matter. Ship often. Learn constantly.”</i>
-</div>
+### 🎨 UI / UX
+
+- Dark, modern interface using **CustomTkinter**
+- Pixel-art buttons with animated states
+- Responsive layout with dynamic image scaling
+- Clean separation between phases and responsibilities
+
+---
+
+## 🛠️ Tech Stack
+
+| Tool | Purpose |
+| --- | --- |
+| **Python 3.8+** | Core language |
+| **Tkinter** | Base GUI framework |
+| **CustomTkinter** | Modern theming & widgets |
+| **Pillow (PIL)** | Image loading & resizing |
+| **Nano Banana** | AI-generated UI assets |
+| **Pixelorama** | Pixel-art button design |
+
+---
+
+## 📁 Project Structure
+
+```
+Mafias/
+├── Helper.py                # Application entry point
+├── button_commands.py       # Main dashboard button handlers
+├── database.py              # In-memory game state
+├── utils.py                 # Shared UI & helper utilities
+├── requirements.txt
+│
+├── windows/                 # Game phase windows
+│   ├── total_players/
+│   ├── roles/
+│   ├── prompts/
+│   └── night/
+│
+├── images/                  # Backgrounds & UI assets
+└── roles_button/           # Button animation frames
+
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python **3.8+**
+- `pip`
+- Multiple LLM chat tabs (browser-based)
+
+### Installation
+
+```bash
+
+git clone https://github.com/anurag-aryan-tech/Mafia-Helper.git
+cd Mafia-Helper
+python -m venv venv
+
+# Linux/macOS
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+
+pip install -r requirements.txt
+python Helper.py
+
+```
+
+---
+
+## 🧭 Typical Game Flow
+
+1. **START** → Set total players & Mafia count
+2. **ROLES** → Assign names and roles (locks game state)
+3. **PROMPTS** → Distribute initial role prompts to LLMs
+4. **DAY 1** → Players discuss externally
+5. **NIGHT** → Run Mafia / Sheriff / Doctor actions
+6. **DAY N** → Discussion & voting
+7. Repeat until win condition
+8. **RESET** → Start a new game
+
+---
+
+## 🧩 Game Logic Summary
+
+### Role Rules
+
+- Exactly **1 Sheriff**
+- Exactly **1 Doctor**
+- Remaining slots split between Mafia & Villagers
+
+### Mafia Balance
+
+```
+Max Mafia = Less than ⌊Total Players / 2⌋
+
+```
+
+### Win Conditions
+
+- **Town wins:** All Mafia eliminated
+- **Mafia wins:** Mafia ≥ remaining Town players
+
+---
+
+## 🗂️ Internal State Model
+
+```python
+Database:
+- total_players
+- total_mafias
+- players_list
+- mafias_list
+- sheriff
+- doctor
+- first_disable
+- prompts
+
+Night_Day_Helper:
+- night_number
+- day_number
+- night_phase
+- dialogues
+- votes
+- doctor_save
+
+```
+
+---
+
+## ⚠️ Known Limitations
+
+### Incomplete / Experimental
+
+- Day Phase UI (discussion & voting not fully visualized)
+- Eliminated players not removed from dropdowns
+- No save/load persistence
+- Single-game session only
+
+### Design Constraints
+
+- Manual copy-paste (no direct LLM API integration)
+- Desktop-only (Tkinter)
+- Single-machine mediator model
+
+---
+
+## 🔮 Planned Improvements
+
+### 🚧 Will Be Completed Soon
+
+- [ ]  Day Phase UI with voting visualization
+- [ ]  Eliminated players removed from dropdowns
+
+### ⏳ Might Not Be Completed Before April
+
+- [ ]  Direct OpenAI / Anthropic API integration
+- [ ]  Web-based version (Flask / React)
+- [ ]  Custom roles & rule variants
+- [ ]  Game analytics & replay
+
+---
+
+## 🎨 Visual Design Notes
+
+- **Primary BG:** `#0E0D0B`
+- **Frame:** `#2A332A`
+- **Text:** `#E6EAF0`
+- **Accent:** `#FF2A2A`
+
+Buttons use pixel-art animation:
+
+- `frame_1.png` → idle
+- `frame_2.png` → pressed
+
+---
+
+### 🙏 Credits
+
+**Developer**
+
+- **SOLO — Anurag Aryan**
+
+**Tools**
+
+- Tkinter & CustomTkinter
+- Pillow
+- Nano Banana (AI assets)
+- Pixelorama (pixel art)
+
+Inspired by classic *Mafia / Werewolf* mechanics and modern LLM-driven social deduction experiments.
+
+---
+
+## 🎭 Final Note
+
+This project is both a **game tool** and a **prompt-engineering experiment**.
+
+If you enjoy orchestrating chaos among AIs—or want to build richer LLM-driven games—this dashboard is a solid foundation.
+
+**Happy mediating. Trust no one!** 🕵️‍♂️
