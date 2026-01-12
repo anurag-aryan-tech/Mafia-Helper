@@ -1,4 +1,4 @@
-# 🕵️ Mafia Mediator’s Dashboard
+# 🕵️ Mafia Mediator's Dashboard
 
 A **desktop game-master dashboard** built with **Python + Tkinter** that streamlines mediating the *Mafia* party game—especially when playing with **LLM players** like ChatGPT, Claude, Grok, Gemini, and others.
 
@@ -11,12 +11,12 @@ This tool centralizes **player management, role assignment, prompt generation, a
 Running Mafia with LLMs as players is surprisingly complex. As the mediator, you must:
 
 - Track who is alive and dead
-- Remember each player’s secret role
+- Remember each player's secret role
 - Repeatedly rewrite and customize prompts
 - Maintain game state across day/night cycles
 - Coordinate multiple LLM chats simultaneously
 
-**Mafia Mediator’s Dashboard** solves this by acting as a **single source of truth** for the entire game.
+**Mafia Mediator's Dashboard** solves this by acting as a **single source of truth** for the entire game.
 
 
 > Think of it as a Dungeon Master screen—but for Mafia, and built specifically for AI players.
@@ -28,11 +28,12 @@ Running Mafia with LLMs as players is surprisingly complex. As the mediator, you
 
 ### 🧑‍🤝‍🧑 Player & Role Management
 
-- Supports **4–11 players**
+- Supports **3–20 players**
 - Roles: Villager, Mafia, Sheriff, Doctor
 - Automatic Mafia count validation based on player total
-- Custom player names (e.g., “ChatGPT-4”, “Claude”, “Gemini”)
+- Custom player names (e.g., "ChatGPT-4", "Claude", "Gemini")
 - Role locking to prevent mid-game tampering
+- Eliminated players automatically removed from dropdowns
 
 ---
 
@@ -48,7 +49,24 @@ Supported prompt types:
 
 - Initial role & rules prompts
 - Night-phase decision prompts
+- Day-phase discussion & voting prompts
 - Investigation & protection result prompts
+
+---
+
+### 📋 One-Click Prompt Distribution
+
+Every phase includes a **Copy to Clipboard** button that:
+- Generates complete, contextualized prompts
+- Includes current game state (alive players, night/day number, phase)
+- Replaces placeholders dynamically
+- Formats for immediate pasting into LLM chat windows
+
+**Example workflow:**
+1. Click Sheriff's copy button
+2. Paste into Claude's chat
+3. Get investigation reasoning
+4. Click next player
 
 ---
 
@@ -57,12 +75,12 @@ Supported prompt types:
 Dedicated UI for each role:
 
 - **Mafia**
-    - Phase 1: Discussion logging
-    - Phase 2: Voting & elimination logic
+    - Phase 1: Discussion logging
+    - Phase 2: Voting & elimination logic
 - **Sheriff**
-    - Investigation reasoning + result generation
+    - Investigation reasoning + result generation
 - **Doctor**
-    - Protection selection & confirmation
+    - Protection selection & confirmation
 
 The system automatically:
 
@@ -70,6 +88,18 @@ The system automatically:
 - Applies Doctor protection
 - Logs night outcomes
 - Advances round counters
+
+---
+
+### ☀️ Day Phase Management
+
+Complete day phase UI with:
+
+- **Phase 1:** Discussion logging for each player
+- **Phase 2:** Voting & elimination
+- Automatic vote tallying
+- Win condition checking (Town vs Mafia)
+- Seamless transition back to night phase
 
 ---
 
@@ -99,20 +129,21 @@ The system automatically:
 
 ```
 Mafias/
-├── Helper.py                # Application entry point
-├── button_commands.py       # Main dashboard button handlers
-├── database.py              # In-memory game state
-├── utils.py                 # Shared UI & helper utilities
+├── Helper.py                # Application entry point
+├── button_commands.py       # Main dashboard button handlers
+├── database.py              # In-memory game state
+├── utils.py                 # Shared UI & helper utilities
 ├── requirements.txt
 │
-├── windows/                 # Game phase windows
-│   ├── total_players/
-│   ├── roles/
-│   ├── prompts/
-│   └── night/
+├── windows/                 # Game phase windows
+│   ├── total_players/
+│   ├── roles/
+│   ├── prompts/
+│   ├── night/
+│   └── day/
 │
-├── images/                  # Backgrounds & UI assets
-└── roles_button/           # Button animation frames
+├── images/                  # Backgrounds & UI assets
+└── roles_button/           # Button animation frames
 
 ```
 
@@ -152,11 +183,10 @@ python Helper.py
 1. **START** → Set total players & Mafia count
 2. **ROLES** → Assign names and roles (locks game state)
 3. **PROMPTS** → Distribute initial role prompts to LLMs
-4. **DAY 1** → Players discuss externally
-5. **NIGHT** → Run Mafia / Sheriff / Doctor actions
-6. **DAY N** → Discussion & voting
-7. Repeat until win condition
-8. **RESET** → Start a new game
+4. **NIGHT 1** → Run Mafia / Sheriff / Doctor actions
+5. **DAY 1** → Discussion & voting
+6. Repeat NIGHT/DAY cycles until win condition
+7. **RESET** → Start a new game
 
 ---
 
@@ -182,61 +212,37 @@ Max Mafia = Less than ⌊Total Players / 2⌋
 
 ---
 
-## 🗂️ Internal State Model
+## 🗂️ Architecture
 
-```python
-Database:
-- total_players
-- total_mafias
-- players_list
-- mafias_list
-- sheriff
-- doctor
-- first_disable
-- prompts
+The app uses an **in-memory state model** with two core classes:
 
-Night_Day_Helper:
-- night_number
-- day_number
-- night_phase
-- dialogues
-- votes
-- doctor_save
+**Database** - Game setup & player tracking  
+**Night_Day_Helper** - Phase management & voting logic
 
-```
+*No external database required—perfect for single-session games.*
 
 ---
 
 ## ⚠️ Known Limitations
-
-### Incomplete / Experimental
-
-- Day Phase UI (discussion & voting not fully visualized)
-- Eliminated players not removed from dropdowns
-- No save/load persistence
-- Single-game session only
 
 ### Design Constraints
 
 - Manual copy-paste (no direct LLM API integration)
 - Desktop-only (Tkinter)
 - Single-machine mediator model
+- No save/load persistence between sessions
 
 ---
 
 ## 🔮 Planned Improvements
 
-### 🚧 Will Be Completed Soon
+### 🚧 Future Enhancements
 
-- [ ]  Day Phase UI with voting visualization
-- [ ]  Eliminated players removed from dropdowns
-
-### ⏳ Might Not Be Completed Before April
-
-- [ ]  Direct OpenAI / Anthropic API integration
-- [ ]  Web-based version (Flask / React)
-- [ ]  Custom roles & rule variants
-- [ ]  Game analytics & replay
+- [ ]  Direct OpenAI / Anthropic API integration
+- [ ]  Save/load game state
+- [ ]  Web-based version (Flask / React)
+- [ ]  Custom roles & rule variants
+- [ ]  Game analytics & replay
 
 ---
 
