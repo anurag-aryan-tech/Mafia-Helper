@@ -26,6 +26,7 @@ class Button_Commands:
         answer = messagebox.askyesno("Reset", "Are you sure you want to reset all values?")
         if answer:
             utils.db.reset_values()
+            utils.nd_helper = utils.db.Night_Day_Helper()
             messagebox.showinfo("Reset", "All values have been reset successfully!")
     
     def prompts_button_command(self, master):
@@ -44,12 +45,12 @@ class Button_Commands:
         night_window.create_window(master)
 
     def day_button_command(self, master):
-        # if not utils.db.first_disable:
-        #     messagebox.showwarning("Warning", "Set the Names and Roles of players to proceed!")
-        #     return
-        # elif utils.nd_helper.day_number >= utils.nd_helper.night_number:
-        #     messagebox.showwarning("Warning", "Finish the current night before starting a new day!")
-        #     return
+        if not utils.db.first_disable:
+            messagebox.showwarning("Warning", "Set the Names and Roles of players to proceed!")
+            return
+        elif utils.nd_helper.day_number >= utils.nd_helper.night_number:
+            messagebox.showwarning("Warning", "Finish the current night before starting a new day!")
+            return
         day_window.create_window(master)
 
     

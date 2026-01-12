@@ -5,6 +5,7 @@ from utils import utils
 from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass, field
 from windows.prompts.prompts_window import ImageFrame, HoverEffects
+from windows.night.night_window import create_window as create_night_window
 
 @dataclass
 class DayWindowConfig:
@@ -80,7 +81,8 @@ class DayPhaseWindow:
         self.window = self._create_window()
         
         # Create shared InteractionFrame instance
-        self.interaction_frame = InteractionFrame(self.window)
+        self.interaction_frame = InteractionFrame(self.window, self.master)
+        self.interaction_frame.day_window = self
 
         self._setup_window_ui()
 
@@ -93,6 +95,26 @@ class DayPhaseWindow:
         self.selection_frame = SelectionFrame(self.body_frame, self.interaction_frame)
         self.prompt_frame = PromptFrame(self.body_frame, self.interaction_frame)
         self.footer_frame = FooterFrame(self.body_frame, self.interaction_frame)
+        
+        # Store references for UI refresh
+        self.interaction_frame.selection_frame_ref = self.selection_frame
+        self.interaction_frame.footer_frame_ref = self.footer_frame
+
+    def _refresh_player_dropdowns(self):
+        """Refresh player dropdowns after elimination"""
+        if self.interaction_frame.selection_frame_ref:
+            active_players = [
+                name for name in self.interaction_frame.players_list 
+                if name not in utils.db.eliminated_players
+            ]
+            self.interaction_frame.selection_frame_ref.player_combobox.configure(values=active_players)
+        
+        if self.interaction_frame.footer_frame_ref:
+            votable_players = [
+                name for name in self.interaction_frame.players_list 
+                if name not in utils.db.eliminated_players
+            ]
+            self.interaction_frame.footer_frame_ref.interaction.vote_combobox.configure(values=votable_players) #type: ignore
 
     def _create_window(self):
         window = tk.Toplevel(self.master)
@@ -182,9 +204,10 @@ class FrameBase:
         return border_frame
 
 class InteractionFrame(FrameBase):
-    def __init__(self, master):
+    def __init__(self, master: tk.Tk|tk.Toplevel, root):
         super().__init__()
         self.master = master
+        self.root = root
         self.day_number = utils.nd_helper.day_number
         self.day_phase = utils.nd_helper.day_phase
         self.dialogue_vote_var = tk.StringVar()
@@ -212,6 +235,12 @@ class InteractionFrame(FrameBase):
         self.next_button: ctk.CTkButton|None = None
         self.player_died: str|None = None
         self.died_reason: str|None = None
+        
+        self.night_button: ctk.CTkButton|None = None
+        
+        self.selection_frame_ref: 'SelectionFrame|None' = None
+        self.footer_frame_ref: 'FooterFrame|None' = None
+        self.day_window: 'DayPhaseWindow|None' = None
 
         self._update_prompt()
 
@@ -237,6 +266,7 @@ class InteractionFrame(FrameBase):
 
     def _on_player_change(self, _: str|None=None):
         self._update_prompt()
+        self.vote_var.set("")
 
     def _update_prompt(self):
         self.day_phase = int((self.phase_var.get()).split()[-1])
@@ -280,6 +310,40 @@ class InteractionFrame(FrameBase):
         self.player_died = results[0]
         self.died_reason = results[1]
 
+        if self.player_died:
+            found_index = None
+            for index, value in enumerate(utils.db.players_list):
+                if value[0].lower() == self.player_died.lower():
+                    found_index = index
+                    break
+            if found_index is not None:
+                utils.db.players_list.pop(found_index)
+                utils.db.eliminated_players.append(self.player_died)
+            utils.db.calculate_left()
+        win_dict = utils.db.check_win()
+        for k, v in win_dict.items():
+            if v:
+                if 'mafia' in k:
+                    winner = 'Mafia'
+                    reason = 'Mafias have gained the majority!'
+                else:
+                    winner = 'Town'
+                    reason = 'All Mafias have been eliminated'
+                messagebox.showinfo("GAME ENDS", f"{'Mafia' if 'mafia' in k else 'Town'} WON!")
+                self.current_prompt = f"""# GAME ENDED
+- **Winner :** {winner}
+- **Reason :** {reason}"""
+                self._copy_to_clipboard()
+
+                self.master.grab_release()
+                self.master.transient(None)
+                utils.db.reset_values()
+                utils.nd_helper = utils.db.Night_Day_Helper()
+
+                self.master.after(200, self.master.destroy)
+
+
+
     def _next_button_click(self, event=None):
         curr_player = self.player_var.get()
         players_pos = self.players_list.index(curr_player)
@@ -288,8 +352,8 @@ class InteractionFrame(FrameBase):
             # Phase 1: Discussion phase
             if curr_player == self.players_list[-1]:
                 # Last player in phase 1, move to phase 2
-                self._on_phase_change("Phase 2")
                 self.phase_var.set("Phase 2")
+                self._on_phase_change("Phase 2")
             else:
                 # Move to next player
                 self.player_var.set(self.players_list[players_pos + 1])
@@ -300,13 +364,19 @@ class InteractionFrame(FrameBase):
                 # Second to last player, move to last player
                 self.player_var.set(self.players_list[-1])
                 if self.next_button:
-                    self.next_button.configure(fg_color="green", border_color="darkgreen", text="🔍")
+                    self.next_button.configure(fg_color="green", border_color="darkgreen", text="🔍", font=(self.style.FONT_FAMILY, self.style.TEXT_SIZE_SMALL, "bold"))
             elif curr_player == self.players_list[-1]:
                 self._check_died()
+                if self.day_window:
+                    self.day_window._refresh_player_dropdowns()
+                if self.night_button:
+                    self.night_button.place(relx=0.72, rely=0.2, relwidth=0.11, relheight=0.6)
                 self.current_prompt = f"""## Day Results
 - **Day Number :** {self.day_number}
 - **Player Died : {self.player_died}
 - **Reason: {self.died_reason}"""
+                messagebox.showinfo("Results", f"Results have been checked.\nDied: {self.player_died}\nYou can copy the prompt!")
+
                 # Last player voted, show copy prompt button
                 if self.next_button:
                     self.next_button.configure(
@@ -318,9 +388,19 @@ class InteractionFrame(FrameBase):
             else:
                 # Regular player in phase 2, move to next player
                 self.player_var.set(self.players_list[players_pos + 1])
+                self._on_player_change()
                 return
 
         self._update_prompt()
+
+    def _night_button_click(self, event=None):
+        utils.nd_helper.day_number += 1
+        create_night_window(self.root)
+
+        self.master.grab_release()
+        self.master.transient(None)
+
+        self.master.after(200, self.master.destroy)
                     
 
 class SelectionFrame(FrameBase):
@@ -351,7 +431,11 @@ class SelectionFrame(FrameBase):
                 messagebox.showerror("Configuration Error", f"No {name} found in database.")
                 raise ValueError(f"No {name} found in database.")
 
-        player_options = self.interaction.players_list
+        # Filter out eliminated players
+        player_options = [
+            name for name in self.interaction.players_list 
+            if name not in utils.db.eliminated_players
+        ]
         check_options("players", player_options)
 
         self.player_combobox = self._create_combobox(self.selection_frame, self.interaction.player_var, player_options)
@@ -446,6 +530,7 @@ class FooterFrame(FrameBase):
         self._create_vote_combo()
         self.interaction._place_dialogue_vote()
         self._create_next_button()
+        self._create_night_button()
 
     def _create_footer_frame(self):
         self.footer_frame = self._create_frames(self.parent, self.rely, self.relheight)
@@ -472,8 +557,6 @@ class FooterFrame(FrameBase):
             widget_config=border_frame
         )
 
-    
-
     def _create_dialogue_entry(self):
         self.interaction.dialogue_entry = ctk.CTkEntry(
             self.footer_frame,
@@ -497,8 +580,13 @@ class FooterFrame(FrameBase):
         self.interaction.dialogue_entry.bind("<Return>", _on_dialogue_submit)
 
     def _create_vote_combo(self):
-        self.interaction.vote_var.set(f"{self.interaction.players_list[0]}")
-        self.interaction.vote_combobox = self._create_combobox(self.footer_frame, self.interaction.vote_var, self.interaction.players_list)
+        self.interaction.vote_var.set(f"")
+        # Filter out eliminated players from vote options
+        votable_players = [
+            name for name in self.interaction.players_list 
+            if name not in utils.db.eliminated_players
+        ]
+        self.interaction.vote_combobox = self._create_combobox(self.footer_frame, self.interaction.vote_var, votable_players)
         self.interaction.vote_combobox.configure(command=self.interaction._on_voting)
 
     def _create_next_button(self):
@@ -519,6 +607,24 @@ class FooterFrame(FrameBase):
             self.style.BD_COLOR
         )
         self.interaction.next_button.place(relx=0.85, rely=0.2, relwidth=0.1, relheight=0.6)
+
+    def _create_night_button(self):
+        self.interaction.night_button = ctk.CTkButton(
+            self.footer_frame,
+            text=f"Night-{utils.nd_helper.night_number}",
+            font=(self.style.FONT_FAMILY, self.style.TEXT_SIZE_SMALL+5, "bold"),
+            fg_color="Purple",
+            bg_color=self.style.BG_COLOR_FRAME,
+            border_width=self.style.BORDER_WIDTH,
+            border_color=self.style.BD_COLOR,
+            corner_radius=self.style.CORNER_RADIUS,
+            command=self.interaction._night_button_click,
+        )
+        HoverEffects.apply_border_hover(
+            self.interaction.night_button,
+            self.style.HOVER_COLOR,
+            self.style.BD_COLOR
+        )
 
 def create_window(master: tk.Tk | tk.Toplevel):
     DayPhaseWindow(master)

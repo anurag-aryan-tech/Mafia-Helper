@@ -15,6 +15,7 @@ class Database:
         self.sheriff: Optional[str] = None
         self.doctor: Optional[str] = None
         self.first_disable: bool = False
+        self.eliminated_players: List[str] = []
         self.prompts = all_prompts.all_prompts_dict
 
     def change_player_num(self, player_num: int) -> None:
@@ -23,6 +24,28 @@ class Database:
         self.players_left = player_num
         self.players_list = [('', '')] * player_num
         self.change_msd(self.players_list)
+
+    def calculate_left(self) -> None:
+        self.players_left = 0
+        self.mafias_left = 0
+        for _, role in self.players_list:
+            if role.lower() == "mafia":
+                self.mafias_left += 1
+            else:
+                self.players_left += 1
+        self.change_msd(self.players_list)
+
+    def check_win(self) -> dict[str, bool]:
+        result = {
+            "town_win" : False,
+            "mafia_win" : False
+        }
+        if self.mafias_left <= 0:
+            result["town_win"] = True
+        elif self.players_left <= self.mafias_left:
+            result["mafia_win"] = True
+
+        return result
 
     def change_mafia_num(self, num: int) -> None:
         """Update total number of mafias"""
@@ -125,6 +148,7 @@ class Database:
             self.votes: dict[str, int] = {}
             self.doctor_save: Optional[str] = None
             self.day_message: str = ""
+            self.eliminated_this_night: Optional[str] = None
             
         def add_dialogue(self, speaker: str, message: str) -> None:
             """Record dialogue from a speaker"""
@@ -150,7 +174,8 @@ class Database:
 
         def most_voted(self) -> Tuple[Optional[str], str]:
             """
-            Get the player with most votes
+            Get the player with most votes, considering doctor save.
+            Prevents multiple eliminations in the same night.
             
             Returns:
                 Tuple of (player_name, message) or (None, reason) if no clear winner
@@ -158,17 +183,48 @@ class Database:
             if not self.votes:
                 return None, "No votes recorded"
             
-            most_voted_player = max(self.votes, key=self.votes.get)  # type: ignore
-            vote_count = self.votes[most_voted_player]
+            # Check if someone was already eliminated this night
+            if self.eliminated_this_night:
+                return None, f"A player has already been eliminated this night ({self.eliminated_this_night.title()})."
+            
+            # Sort players by vote count (descending) and then alphabetically for consistency
+            sorted_votes = sorted(self.votes.items(), key=lambda x: (-x[1], x[0]))
+            most_voted_player, vote_count = sorted_votes[0]
             total_votes = sum(self.votes.values())
             
-            if vote_count > total_votes / 2:
-                return most_voted_player, f"Got {vote_count} out of {total_votes} votes"
-            return None, "No clear majority"
+            # Check if the doctor saved the most-voted player
+            if self.doctor_save and most_voted_player.lower() == self.doctor_save.lower():
+                if len(sorted_votes) > 1:
+                    # If there is another player with votes, consider them next
+                    next_player, next_vote_count = sorted_votes[1]
+                    self.eliminated_this_night = next_player
+                    return next_player, f"{next_player.title()} was eliminated with {next_vote_count} votes (doctor saved {most_voted_player.title()})."
+                return None, f"No elimination (doctor saved {most_voted_player.title()})."
+            
+            # If votes exist, the most-voted player is eliminated (handles single mafia case)
+            self.eliminated_this_night = most_voted_player
+            return most_voted_player, f"{most_voted_player.title()} was eliminated with {vote_count} out of {total_votes} votes."
 
         def clear_votes(self) -> None:
             """Clear all votes"""
             self.votes = {}
+
+        def reset_night_state(self) -> None:
+            """Reset night elimination tracking for a new night"""
+            self.eliminated_this_night = None
+
+        def increment_night(self) -> None:
+            """Increment night number for the next night phase"""
+            self.night_number += 1
+            self.night_phase = 1
+            self.day_phase = 1
+            self.eliminated_this_night = None
+
+        def increment_day(self) -> None:
+            """Increment day number for the next day phase"""
+            self.day_number += 1
+            self.day_phase = 1
+            self.night_phase = 1
 
         def set_doctor_save(self, player: str) -> None:
             """Set which player the doctor is saving"""

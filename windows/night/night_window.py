@@ -92,6 +92,7 @@ class RoleFrame:
         self.dialogue_entry = self._create_dialogue_entry()
         self.voted_combo = self._create_voted_combo()
         self.copy_button = self._create_copy_button()
+        self.previous_vote = None  # Track the previous vote for this role
     
     def _create_title_label(self):
         """Create the title label for the role"""
@@ -165,7 +166,7 @@ class RoleFrame:
     def _create_voted_combo(self) -> ctk.CTkComboBox:
         """Create the voting combobox"""
         values = self._get_vote_values()
-        self.voted_var.set(values[0] if values else "")
+        self.voted_var.set("")
         
         combo = self._create_styled_combo(
             variable=self.voted_var,
@@ -179,10 +180,11 @@ class RoleFrame:
         if self.name == "Mafia":
             # Mafia can only vote for non-mafia players
             return [name for name, _ in utils.db.players_list 
-                    if name not in utils.db.mafias_list]
+                    if name not in utils.db.mafias_list and name not in utils.db.eliminated_players]
         else:
-            # Sheriff and Doctor can vote for anyone
-            return [name for name, _ in utils.db.players_list]
+            # Sheriff and Doctor can vote for anyone except eliminated players
+            return [name for name, _ in utils.db.players_list 
+                    if name not in utils.db.eliminated_players]
     
     def _create_copy_button(self) -> ctk.CTkButton:
         """Create the copy to clipboard button"""
@@ -260,7 +262,10 @@ class MafiaControls:
     def __init__(self, mafia_frame: RoleFrame, style: StyleConfig):
         self.mafia_frame = mafia_frame
         self.style = style
-        self.player_var = tk.StringVar(value=utils.db.mafias_list[0] if utils.db.mafias_list else "")
+        # Filter out eliminated players from available speakers
+        active_mafias = [name for name in utils.db.mafias_list 
+                if name not in utils.db.eliminated_players]
+        self.player_var = tk.StringVar(value=active_mafias[0] if active_mafias else "")
         
         self._setup_ui()
     
@@ -269,7 +274,7 @@ class MafiaControls:
         self._create_speaker_label()
         self.player_combo = self._create_speaker_combo()
         self.next_button = self._create_next_button()
-        self.done_button = self._create_done_button()
+        self.day_button = self._create_done_button()
     
     def _create_speaker_label(self):
         """Create the speaker selection label"""
@@ -284,6 +289,9 @@ class MafiaControls:
     
     def _create_speaker_combo(self) -> ctk.CTkComboBox:
         """Create the speaker selection combobox"""
+        # Filter out eliminated players from available speakers
+        active_mafias = [name for name in utils.db.mafias_list 
+                        if name not in utils.db.eliminated_players]
         combo = ctk.CTkComboBox(
             self.mafia_frame.frame,
             corner_radius=self.style.CORNER_RADIUS,
@@ -299,7 +307,7 @@ class MafiaControls:
             dropdown_text_color=self.style.TEXT_COLOR,
             dropdown_font=(self.style.FONT_FAMILY, self.style.DROPDOWN_FONT_SIZE, "bold"),
             variable=self.player_var,
-            values=utils.db.mafias_list
+            values=active_mafias
         )
         combo.place(relx=0.425, rely=0.425, relwidth=0.475, relheight=0.1)
         HoverEffect.apply_to_widget(combo, self.style.HOVER_COLOR, self.style.BD_COLOR)
@@ -321,19 +329,20 @@ class MafiaControls:
         return button
     
     def _create_done_button(self) -> ctk.CTkButton:
-        """Create the DONE button"""
+        """Create the DAY button (hidden until night ends)"""
         button = ctk.CTkButton(
             self.mafia_frame.frame,
-            text="DONE",
+            text="DAY",
             command=None,  # Will be set externally
-            fg_color="darkgreen",
-            border_color="green",
-            hover_color="green",
+            fg_color="darkblue",
+            border_color="blue",
+            hover_color="blue",
             text_color=self.style.TEXT_COLOR,
             border_width=3,
             font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
         )
         button.place(relx=0.25, rely=0.75, relwidth=0.25, relheight=0.15)
+        button.place_forget()  # Hide initially
         return button
 
 
@@ -442,9 +451,9 @@ class NightPhaseWindow:
             )
         
         # Vote handlers
-        for role_frame in self.role_frames.values():
+        for name, role_frame in self.role_frames.items():
             role_frame.voted_combo.configure(
-                command=lambda value: utils.nd_helper.add_vote(value.lower())
+                command=lambda value, rf=role_frame: self._on_vote_change(rf, value.lower())
             )
         
         # Copy button handlers
@@ -455,7 +464,7 @@ class NightPhaseWindow:
         
         # Mafia-specific handlers
         self.mafia_controls.next_button.configure(command=self._on_next_click)
-        self.mafia_controls.done_button.configure(command=self._on_done_click)
+        self.mafia_controls.day_button.configure(command=self._on_day_click)
     
     def _on_phase_change(self, event: str):
         """Handle phase change event"""
@@ -470,6 +479,9 @@ class NightPhaseWindow:
                 border_width=3,
                 font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
             )
+            # Hide day button in phase 1
+            if self.mafia_controls.day_button.winfo_ismapped():
+                self.mafia_controls.day_button.place_forget()
         elif '2' in event:
             utils.nd_helper.night_phase = 2
             if len(utils.db.mafias_list) == 1:
@@ -500,6 +512,30 @@ class NightPhaseWindow:
         speaker = self.mafia_controls.player_var.get()
         dialogue = role_frame.dialogue_var.get()
         utils.nd_helper.add_dialogue(speaker, dialogue)
+    
+    def _on_vote_change(self, role_frame: RoleFrame, new_vote: str):
+        """Handle vote change - replace previous vote with new vote"""
+        if not new_vote:  # Empty selection
+            return
+        
+        # Doctor saves instead of voting
+        if role_frame.name == "Doctor":
+            utils.nd_helper.set_doctor_save(new_vote)
+            role_frame.previous_vote = new_vote #type: ignore
+            return
+        
+        # For other roles, handle regular votes
+        # If there was a previous vote, remove it
+        if role_frame.previous_vote:
+            prev_vote_lower = role_frame.previous_vote.lower()
+            if prev_vote_lower in utils.nd_helper.votes:
+                utils.nd_helper.votes[prev_vote_lower] -= 1
+                if utils.nd_helper.votes[prev_vote_lower] <= 0:
+                    del utils.nd_helper.votes[prev_vote_lower]
+        
+        # Add the new vote
+        utils.nd_helper.add_vote(new_vote)
+        role_frame.previous_vote = new_vote # type: ignore
     
     def _on_next_click(self):
         """Handle NEXT button click - cycle through speakers and phases"""
@@ -539,22 +575,69 @@ class NightPhaseWindow:
                 self.mafia_controls.player_var.set(mafias_list[current_index + 1])
     
     def _check_died(self):
-        """Check if the targeted player dies"""
+        """Check if the targeted player dies and show copy button"""
         target = utils.nd_helper.most_voted()[0]
+        
         if target is None:
             utils.nd_helper.change_day_message("No one")
             message = "No one"
         else:
+            # Check if doctor saved the target
             died = utils.nd_helper.check_died(target)
-            message = target if died else "No one"
+            
+            if died:
+                # Player actually died
+                found_index = None
+                for index, value in enumerate(utils.db.players_list):
+                    if value[0].lower() == target.lower():
+                        found_index = index
+                        break
+                if found_index is not None:
+                    utils.db.players_list.pop(found_index)
+                    utils.db.eliminated_players.append(target)
+                utils.db.calculate_left()
+                message = target
+            else:
+                # Doctor saved them
+                message = "No one"
+            
             utils.nd_helper.change_day_message(message)
+        
         messagebox.showinfo("Night Result", f"{message} has died tonight. Day message updated.")
+        
+        # Change button to copy button
+        if self.mafia_controls.next_button:
+            self.mafia_controls.next_button.configure(
+                text="📋",
+                fg_color="steelblue",
+                border_color="darkblue",
+                command=lambda: self._copy_day_message()
+            )
+        
+        # Show Day button
+        if self.mafia_controls.day_button:
+            self.mafia_controls.day_button.place(relx=0.25, rely=0.75, relwidth=0.25, relheight=0.15)
     
-    def _on_done_click(self):
-        """Handle DONE button click - increase night number and close window"""
-        utils.nd_helper.night_number += 1
-        # Close window after 100ms
-        self.window.after(100, self.window.destroy)
+    def _on_day_click(self):
+        """Handle DAY button click - increase day number and close window to return to day phase"""
+        from windows.day.day_window import create_window as create_day_window
+        
+        # Increment night number when transitioning to day phase
+        utils.nd_helper.increment_night()
+        
+        create_day_window(self.window.master) #type: ignore
+        
+        self.window.grab_release()
+        self.window.transient(None)
+        self.window.after(200, self.window.destroy)
+    
+    def _copy_day_message(self):
+        """Copy the day message to clipboard"""
+        day_message = utils.nd_helper.day_message
+        self.window.clipboard_clear()
+        self.window.clipboard_append(day_message)
+        self.window.update()
+        messagebox.showinfo("Copied", "Day message copied to clipboard!")
     
     def _copy_to_clipboard(self, role: str):
         """Copy the appropriate prompt to clipboard"""
@@ -607,6 +690,16 @@ class NightPhaseWindow:
     def _initialize_ui_state(self):
         """Initialize the UI to the correct state"""
         self._update_ui_for_phase()
+        
+        # If reopening in phase 2 with only 1 mafia, set button to CHECK
+        if utils.nd_helper.night_phase == 2 and len(utils.db.mafias_list) == 1:
+            self.mafia_controls.next_button.configure(
+                text="CHECK!",
+                fg_color="green",
+                border_color="lightgreen",
+                hover_color="darkgreen",
+                command=self._check_died
+            )
 
 
 def create_window(master):
