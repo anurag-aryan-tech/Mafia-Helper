@@ -242,6 +242,8 @@ class InteractionFrame(FrameBase):
         self.footer_frame_ref: 'FooterFrame|None' = None
         self.day_window: 'DayPhaseWindow|None' = None
 
+        self.window_destroying = False
+
         self._update_prompt()
 
     def _on_phase_change(self, current_phase: str):
@@ -306,10 +308,15 @@ class InteractionFrame(FrameBase):
         self.master.update()  # now it stays on the clipboard after the window is closed
 
     def _check_died(self):
+        
+        utils.nd_helper.clear_votes()
+        utils.nd_helper.clear_dialogues()
+
         results = utils.nd_helper.most_voted()
         self.player_died = results[0]
         self.died_reason = results[1]
 
+        # Remove dead player if any
         if self.player_died:
             found_index = None
             for index, value in enumerate(utils.db.players_list):
@@ -320,6 +327,13 @@ class InteractionFrame(FrameBase):
                 utils.db.players_list.pop(found_index)
                 utils.db.eliminated_players.append(self.player_died)
             utils.db.calculate_left()
+
+        self.current_prompt = f"""## Day Results
+- **Day Number :** {self.day_number}
+- **Player Died :** {self.player_died}
+- **Reason :** {self.died_reason}"""
+
+        # Check win condition (same core logic as night)
         win_dict = utils.db.check_win()
         for k, v in win_dict.items():
             if v:
@@ -329,21 +343,28 @@ class InteractionFrame(FrameBase):
                 else:
                     winner = 'Town'
                     reason = 'All Mafias have been eliminated'
-                messagebox.showinfo("GAME ENDS", f"{'Mafia' if 'mafia' in k else 'Town'} WON!")
+
+                messagebox.showinfo("GAME ENDS", f"{'Mafia' if 'mafia' in k else 'Town'} WON!") 
+
+                # Build final prompt (same style as night)
                 self.current_prompt = f"""# GAME ENDED
 - **Winner :** {winner}
 - **Reason :** {reason}"""
+
+                # Copy final result to clipboard
                 self._copy_to_clipboard()
 
+                # Reset global state and close this window
                 self.master.grab_release()
                 self.master.transient(None)
                 utils.db.reset_values()
                 utils.nd_helper = utils.db.Night_Day_Helper()
-
+                self.window_destroying = True
                 self.master.after(200, self.master.destroy)
 
-
-
+                # IMPORTANT: stop any further day-phase UI logic
+                return
+            
     def _next_button_click(self, event=None):
         curr_player = self.player_var.get()
         players_pos = self.players_list.index(curr_player)
@@ -363,43 +384,64 @@ class InteractionFrame(FrameBase):
             if curr_player == self.players_list[-2]:
                 # Second to last player, move to last player
                 self.player_var.set(self.players_list[-1])
+                self.vote_var.set("")
                 if self.next_button:
                     self.next_button.configure(fg_color="green", border_color="darkgreen", text="🔍", font=(self.style.FONT_FAMILY, self.style.TEXT_SIZE_SMALL, "bold"))
+
+                self._update_prompt()
+                return
             elif curr_player == self.players_list[-1]:
+                # _check_died may destroy the window and return early on WIN
                 self._check_died()
+
+                # If the window has been destroyed due to a win, stop here
+                if self.window_destroying:
+                    return
+
+                # No win: proceed with normal day results
                 if self.day_window:
                     self.day_window._refresh_player_dropdowns()
                 if self.night_button:
                     self.night_button.place(relx=0.72, rely=0.2, relwidth=0.11, relheight=0.6)
-                self.current_prompt = f"""## Day Results
-- **Day Number :** {self.day_number}
-- **Player Died : {self.player_died}
-- **Reason: {self.died_reason}"""
+
                 messagebox.showinfo("Results", f"Results have been checked.\nDied: {self.player_died}\nYou can copy the prompt!")
 
                 # Last player voted, show copy prompt button
                 if self.next_button:
                     self.next_button.configure(
-                        fg_color="steelblue", 
-                        border_color="darkblue", 
-                        text="📋", 
+                        fg_color="steelblue",
+                        border_color="darkblue",
+                        text="📋",
                         command=self._copy_to_clipboard
                     )
+                self.current_prompt = f"""## Day Results
+- **Day Number :** {self.day_number}
+- **Player Died :** {self.player_died}
+- **Reason :** {self.died_reason}"""
+                
+                self.prompt_var.set(
+    self.current_prompt[:130] + "..." if len(self.current_prompt) > 130 else self.current_prompt
+)
+
             else:
                 # Regular player in phase 2, move to next player
                 self.player_var.set(self.players_list[players_pos + 1])
                 self._on_player_change()
+                self._update_prompt()
                 return
 
-        self._update_prompt()
 
     def _night_button_click(self, event=None):
+        utils.nd_helper.clear_votes()
+        utils.nd_helper.clear_dialogues()
+
         utils.nd_helper.day_number += 1
         create_night_window(self.root)
 
         self.master.grab_release()
         self.master.transient(None)
-
+        
+        self.window_destroying = True
         self.master.after(200, self.master.destroy)
                     
 

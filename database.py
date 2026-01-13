@@ -1,3 +1,4 @@
+from tkinter import messagebox
 import windows.prompts.all_prompts as all_prompts
 from typing import List, Tuple, Optional
 
@@ -231,18 +232,20 @@ class Database:
             self.doctor_save = player
 
         def investigate_result(self, player: str, database: 'Database') -> str:
-            """
-            Get sheriff investigation result for a player
-            
-            Returns:
-                String describing if player is mafia or not
-            """
+            result = "Player not found"
             for name, role in database.players_list:
                 if name.lower() == player.lower():
                     if role.lower() == 'mafia':
-                        return f"{player.title()} is a Mafia."
-                    return f"{player.title()} is not a Mafia."
-            return "Player not found"
+                        result = f"{player.title()} is a Mafia."
+                    else:
+                        result = f"{player.title()} is not a Mafia."
+                    break  # stop once found
+            messagebox.showinfo(
+                "Sheriff Investigation",
+                f"Investigated {player.title()}: {result}\nCopy Sheriff prompt to clipboard."
+            )
+            return result
+
             
         def check_died(self, target: str) -> bool:
             """Check if target died (returns False if doctor saved them)"""

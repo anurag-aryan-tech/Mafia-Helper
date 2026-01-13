@@ -355,6 +355,7 @@ class NightPhaseWindow:
         self.window = self._create_window()
         self.frames = {}
         self.role_frames: Dict[str, RoleFrame] = {}
+        self.sheriff_last_result: str = ""
         self.mafia_controls: MafiaControls  # Will be initialized in _setup_mafia_controls
         
         self._setup_window()
@@ -479,6 +480,8 @@ class NightPhaseWindow:
                 border_width=3,
                 font=(self.style.FONT_FAMILY, self.style.BUTTON_FONT_SIZE, "bold")
             )
+            utils.nd_helper.clear_votes()
+
             # Hide day button in phase 1
             if self.mafia_controls.day_button.winfo_ismapped():
                 self.mafia_controls.day_button.place_forget()
@@ -492,6 +495,8 @@ class NightPhaseWindow:
                     hover_color="darkgreen",
                     command=self._check_died
                 )
+
+                utils.nd_helper.clear_dialogues()
         
         # Update all role frames
         for role_frame in self.role_frames.values():
@@ -522,7 +527,11 @@ class NightPhaseWindow:
         if role_frame.name == "Doctor":
             utils.nd_helper.set_doctor_save(new_vote)
             role_frame.previous_vote = new_vote #type: ignore
+            
+        elif role_frame.name == "Sheriff":
+            self.sheriff_last_result = utils.nd_helper.investigate_result(new_vote, utils.db)
             return
+
         
         # For other roles, handle regular votes
         # If there was a previous vote, remove it
@@ -577,14 +586,14 @@ class NightPhaseWindow:
     def _check_died(self):
         """Check if the targeted player dies and show copy button"""
         target = utils.nd_helper.most_voted()[0]
-        
+
         if target is None:
             utils.nd_helper.change_day_message("No one")
             message = "No one"
         else:
             # Check if doctor saved the target
             died = utils.nd_helper.check_died(target)
-            
+
             if died:
                 # Player actually died
                 found_index = None
@@ -592,19 +601,53 @@ class NightPhaseWindow:
                     if value[0].lower() == target.lower():
                         found_index = index
                         break
+                # must check "is not None" because index 0 is valid but falsy
                 if found_index is not None:
                     utils.db.players_list.pop(found_index)
                     utils.db.eliminated_players.append(target)
                 utils.db.calculate_left()
+
+                # === GAME WIN CHECK (copied from day logic) ===
+                win_dict = utils.db.check_win()
+                for k, v in win_dict.items():
+                    if v:
+                        if 'mafia' in k:
+                            winner = 'Mafia'
+                            reason = 'Mafias have gained the majority!'
+                        else:
+                            winner = 'Town'
+                            reason = 'All Mafias have been eliminated'
+                        messagebox.showinfo("GAME ENDS", f"{'Mafia' if 'mafia' in k else 'Town'} WON!")
+
+                        final_prompt = f"""# GAME ENDED
+    - **Winner :** {winner}
+    - **Reason :** {reason}"""
+
+                        # Copy final result to clipboard (optional but matches day behavior)
+                        self.window.clipboard_clear()
+                        self.window.clipboard_append(final_prompt)
+                        self.window.update()
+
+                        # Reset global state and close window
+                        self.window.grab_release()
+                        self.window.transient(None)
+                        utils.db.reset_values()
+                        utils.nd_helper = utils.db.Night_Day_Helper()
+                        self.window.after(200, self.window.destroy)
+                        return
+                # === END GAME WIN CHECK ===
+
                 message = target
             else:
                 # Doctor saved them
                 message = "No one"
-            
+
             utils.nd_helper.change_day_message(message)
-        
+            utils.nd_helper.clear_dialogues()
+            utils.nd_helper.clear_votes()
+
         messagebox.showinfo("Night Result", f"{message} has died tonight. Day message updated.")
-        
+
         # Change button to copy button
         if self.mafia_controls.next_button:
             self.mafia_controls.next_button.configure(
@@ -613,10 +656,11 @@ class NightPhaseWindow:
                 border_color="darkblue",
                 command=lambda: self._copy_day_message()
             )
-        
+
         # Show Day button
         if self.mafia_controls.day_button:
             self.mafia_controls.day_button.place(relx=0.25, rely=0.75, relwidth=0.25, relheight=0.15)
+
     
     def _on_day_click(self):
         """Handle DAY button click - increase day number and close window to return to day phase"""
@@ -624,6 +668,8 @@ class NightPhaseWindow:
         
         # Increment night number when transitioning to day phase
         utils.nd_helper.increment_night()
+        utils.nd_helper.clear_votes()        # <-- add
+        utils.nd_helper.clear_dialogues()
         
         create_day_window(self.window.master) #type: ignore
         
@@ -647,6 +693,13 @@ class NightPhaseWindow:
             prompt_data = prompts['mafia']
             dialogues = utils.nd_helper.get_dialogues()
         elif role == "sheriff":
+            if self.sheriff_last_result:
+                updated_prompt = self.sheriff_last_result
+                self.window.clipboard_clear()
+                self.window.clipboard_append(updated_prompt)
+                self.window.update()
+                return
+
             prompt_data = prompts['sheriff']
             dialogues = ""
         else:  # doctor
