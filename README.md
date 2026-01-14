@@ -1,4 +1,11 @@
+<div align="center">
+
 # 🕵️ Mafia Mediator's Dashboard
+
+</div>
+
+<!--Title image showing the screenshot of the app -->
+<img src="images/Screenshot.png" height="350">
 
 A **desktop game-master dashboard** built with **Python + Tkinter** that streamlines mediating the *Mafia* party game—especially when playing with **LLM players** like ChatGPT, Claude, Grok, Gemini, and others.
 
