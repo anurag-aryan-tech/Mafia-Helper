@@ -17,7 +17,7 @@ This tool centralizes **player management, role assignment, prompt generation, a
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Contributors](https://img.shields.io/github/contributors/anurag-aryan-tech/Mafia-Helper)
 ![Issues](https://img.shields.io/github/issues/anurag-aryan-tech/Mafia-Helper)
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Release](https://img.shields.io/github/v/release/anurag-aryan-tech/Mafia-Helper)
 ![Tkinter](https://img.shields.io/badge/Tkinter-blue)
 ![LLM](https://img.shields.io/badge/LLM-lightgrey)
 
