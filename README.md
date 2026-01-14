@@ -4,12 +4,22 @@
 
 </div>
 
+
 <!--Title image showing the screenshot of the app -->
 <img src="images/Screenshot.png">
+
 
 A **desktop game-master dashboard** built with **Python + Tkinter** that streamlines mediating the *Mafia* party game—especially when playing with **LLM players** like ChatGPT, Claude, Grok, Gemini, and others.
 
 This tool centralizes **player management, role assignment, prompt generation, and night/day workflows**, eliminating the cognitive and logistical overhead of running Mafia across multiple AI chat windows.
+
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Contributors](https://img.shields.io/github/contributors/anurag-aryan-tech/Mafia-Helper)
+![Issues](https://img.shields.io/github/issues/anurag-aryan-tech/Mafia-Helper)
+![Version](https://img.shields.io/badge/version-1.0-blue)
+![Tkinter](https://img.shields.io/badge/Tkinter-blue)
+![LLM](https://img.shields.io/badge/LLM-lightgrey)
 
 ---
 
